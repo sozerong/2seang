@@ -32,48 +32,69 @@ const CCTV = (() => {
     c.putImageData(d, 0, 0);
   }
 
-  // ---- 사람 ----
-  // o: {x, y(발), h(키 px), body, legs, hair:'short'|'long'|'cap', face:'front'|'back'|'left'|'right',
-  //     pose:'stand'|'walk'|'sit', env, card, case, badge, band, torch, push}
-  function person(c, o) {
-    const s = o.h / 60, body = gy(o.body ?? 140), legs = gy(o.legs ?? 45), skin = gy(170), hair = gy(25);
-    c.save(); c.translate(o.x, o.y); c.scale(s, s);
-    const sit = o.pose === 'sit', dy = sit ? 14 : 0;
-    if (!sit) {
-      if (o.pose === 'walk') { line(c, legs, 4.5, -2, -28, -7, -1); line(c, legs, 4.5, 2, -28, 6, -1); }
-      else { rect(c, -5, -28, 4, 28, legs); rect(c, 1, -28, 4, 28, legs); }
-      rect(c, -6, -2, 5, 2, gy(15)); rect(c, 1, -2, 5, 2, gy(15));
-    }
-    // 머리카락(뒤)
-    if (o.hair === 'long' && o.face !== 'back') rect(c, -6.5, -58 + dy, 13, 15, hair);
-    // 몸통
-    poly(c, body, -8, -48 + dy, 8, -48 + dy, 6.5, -27 + dy, -6.5, -27 + dy);
-    if (o.suit && o.face !== 'back') { poly(c, gy(200), -2.5, -48 + dy, 2.5, -48 + dy, 0, -38 + dy); line(c, gy(20), 1.4, 0, -46 + dy, 0, -37 + dy); }
-    // 팔
-    const arm = (sx, ex, ey) => line(c, body, 3.4, sx, -46 + dy, ex, ey + dy);
-    if (o.env) { arm(-7, -2, -38); arm(7, 2, -38); }
-    else if (o.card) { arm(-7, -8, -28); arm(7, 15, -40); rect(c, 14, -44 + dy, 5, 4, gy(235)); }
-    else if (o.torch) { arm(-7, -8, -28); arm(7, 16, -38); rect(c, 15, -40 + dy, 6, 3, gy(60)); }
-    else if (o.push) { arm(-7, -12, -34); arm(7, 12, -34); }
-    else if (o.reach) { arm(-7, -8, -28); arm(7, 4, -26); line(c, body, 3.4, 4, -26 + dy, 20, -20 + dy); }
-    else { arm(-7, -8, -28); arm(7, 8, -28); }
-    if (o.band) rect(c, 5.5, -44 + dy, 3.5, 3, gy(240));
-    if (o.badge && o.face !== 'back') { line(c, gy(30), .8, -3, -48 + dy, 0, -40 + dy, 3, -48 + dy); rect(c, -2, -40 + dy, 4, 5, gy(240)); }
-    if (o.env) rect(c, -7, -45 + dy, 14, 10, gy(225));
-    if (o.case) { rect(c, 6, -29 + dy, 10, 8, gy(30)); line(c, gy(30), 1, 9, -29 + dy, 9, -31 + dy, 13, -31 + dy, 13, -29 + dy); }
-    // 머리
-    ell(c, 0, -53 + dy, 5.5, 6.5, o.face === 'back' ? hair : skin);
-    if (o.face !== 'back') {
-      if (o.hair === 'cap') { poly(c, gy(30), -6, -55 + dy, 6, -55 + dy, 5, -60 + dy, -5, -60 + dy); rect(c, -7, -55.5 + dy, 14, 1.6, gy(20)); }
-      else { c.save(); c.beginPath(); c.ellipse(0, -53 + dy, 5.6, 6.6, 0, 0, Math.PI * 2); c.clip(); rect(c, -7, -61 + dy, 14, o.hair === 'long' ? 6 : 4.5, hair); c.restore(); }
-      if (o.face === 'left') rect(c, 1, -58 + dy, 5, 9, hair);
-      if (o.face === 'right') rect(c, -6, -58 + dy, 5, 9, hair);
-    }
+  // ---- 사람 (둥글고 부드러운 2.5D 마스코트풍) ----
+  // 키 60 단위 기준: 머리 지름 26(큰 머리), 몸통 26, 다리 8
+  // o: {x, y(발), h(px), body, legs, hair:'short'|'slick'|'bob'|'buzz'|'cap', glasses, suit,
+  //     face:'front'|'back'|'left'|'right', pose:'stand'|'walk'|'sit', env, card, case, badge, band, torch, push, reach}
+  const rr = (c, x, y, w, h, r, f) => { c.fillStyle = f; c.beginPath(); c.roundRect(x, y, w, h, r); c.fill(); };
+  const ball = (c, x, y, r, v) => { const g = c.createRadialGradient(x - r * .35, y - r * .45, r * .1, x, y, r * 1.05);
+    g.addColorStop(0, gy(Math.min(255, v + 50))); g.addColorStop(.65, gy(v)); g.addColorStop(1, gy(v * .55)); return g; };
+  const side = (v, x0, x1) => { const g = c0.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, gy(Math.min(255, v + 35))); g.addColorStop(.55, gy(v)); g.addColorStop(1, gy(v * .6)); return g; };
+  let c0;
+
+  function head(c, x, y, o) { // 반지름 13
+    const HAIR = o.hair === 'cap' ? 55 : o.hair === 'slick' ? 22 : 38, back = o.face === 'back';
+    const fx = o.face === 'left' ? -4 : o.face === 'right' ? 4 : 0;
+    if (o.hair === 'bob') { rr(c, x - 14, y - 10, 28, 20, 9, ball(c, x, y, 15, HAIR)); }        // 단발 뒷머리
+    ell(c, x, y, 13, 13, back ? ball(c, x, y, 13, HAIR) : ball(c, x, y, 13, 205));
+    c.strokeStyle = gy(15, .45); c.lineWidth = 1; c.beginPath(); c.arc(x, y, 13, 0, Math.PI * 2); c.stroke();
+    if (back) { if (o.hair === 'cap') { ell(c, x, y - 6, 13, 8, ball(c, x, y - 6, 13, 60)); } return; }
+    // 머리카락 (머리 원 안쪽으로 잘라서)
+    c.save(); c.beginPath(); c.arc(x, y, 13.2, 0, Math.PI * 2); c.clip();
+    const top = (cy, ry, v) => ell(c, x - fx * .6, cy, 15, ry, ball(c, x, cy, 15, v));
+    if (o.hair === 'short') { top(y - 9, 8, HAIR); ell(c, x - 5 - fx, y - 4, 7, 3.5, gy(HAIR)); }     // 옆가르마 앞머리
+    if (o.hair === 'slick') { top(y - 9, 7, HAIR); line(c, gy(70), 1, x - 7, y - 9, x + 5, y - 12); }    // 넘긴 머리 + 광
+    if (o.hair === 'bob') { top(y - 8, 8, HAIR); rr(c, x - 13, y - 6, 26, 4, 2, gy(HAIR)); }           // 일자 앞머리
+    if (o.hair === 'buzz') top(y - 10, 6, 60);
+    if (fx) ell(c, x - fx * 2.6, y - 3, 7, 11, ball(c, x - fx * 2.6, y - 3, 10, HAIR));           // 옆모습 뒷머리
     c.restore();
-    if (o.torch) { // 손전등 빛
-      const g = c.createLinearGradient(o.x + 20 * s, 0, o.x + 70 * s, 0); g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(255,255,255,0)');
-      poly(c, g, o.x + 20 * s, o.y - 40 * s, o.x + 75 * s, o.y - 58 * s, o.x + 75 * s, o.y - 5 * s);
-    }
+    if (o.hair === 'cap') { ell(c, x, y - 7, 13.5, 8, ball(c, x, y - 8, 14, 60)); rr(c, x - 15 + fx * 1.5, y - 3, 30, 3, 1.5, gy(30)); rect(c, x - 3, y - 11, 6, 4, gy(200)); }
+    // 얼굴
+    const eyes = o.face === 'front' ? [x - 4.5, x + 4.5] : [x + fx * 1.8];
+    eyes.forEach(ex => { ell(c, ex, y + 4.5, 2.4, 1.3, gy(165, .55)); ell(c, ex, y + 1.5, 1.8, 2.5, gy(15)); ell(c, ex + .6, y + .6, .6, .6, gy(250)); });
+    if (o.glasses) { c.strokeStyle = gy(20); c.lineWidth = 1; eyes.forEach(ex => { c.beginPath(); c.arc(ex, y + 2, 3.2, 0, Math.PI * 2); c.stroke(); });
+      if (eyes.length > 1) line(c, gy(20), 1, x - 1.3, y + 2, x + 1.3, y + 2); }
+    ell(c, x + fx * 1.6, y + 7.2, 1.4, .8, gy(120));                                                    // 입
+  }
+
+  function person(c, o) {
+    c0 = c; const s = o.h / 60, B = o.body ?? 160, Lg = o.legs ?? 50;
+    c.save(); c.translate(o.x, o.y);
+    ell(c, 0, 0, 13 * s, 3 * s, 'rgba(0,0,0,.35)');                                                  // 바닥 그림자
+    c.scale(s, s);
+    const sit = o.pose === 'sit', dy = sit ? 6 : 0, walk = o.pose === 'walk';
+    if (!sit) { rr(c, -7.5, walk ? -12 : -10, 7, walk ? 12 : 10, 3, gy(Lg)); rr(c, .5, -10, 7, walk ? 8 : 10, 3, gy(Lg));
+      ell(c, -4.5, walk ? -1.5 : -1, 4.5, 2.2, gy(22)); ell(c, 4.5, -1, 4.5, 2.2, gy(22)); }
+    // 팔 (몸 뒤쪽에 있는 쪽 먼저)
+    const arm = (x0, y0, x1, y1) => { line(c, gy(B * .82), 6, x0, y0 + dy, x1, y1 + dy); ell(c, x1, y1 + dy, 2.6, 2.6, gy(200)); };
+    const arms = o.env ? [[-9, -28, -5, -22], [9, -28, 5, -22]] : o.card ? [[-9, -28, -12, -14], [9, -28, 18, -36]]
+      : o.torch ? [[-9, -28, -12, -14], [9, -28, 18, -24]] : o.push ? [[-9, -28, -17, -20], [9, -28, -10, -19]]
+      : o.reach ? [[-9, -28, -12, -15], [9, -28, 23, -20]] : [[-9, -28, -12, -14], [9, -28, 12, -14]];
+    // 몸통
+    rr(c, -11, -33 + dy, 22, 25, [8, 8, 11, 11], side(B, -11, 11));
+    c.strokeStyle = gy(15, .4); c.lineWidth = 1; c.beginPath(); c.roundRect(-11, -33 + dy, 22, 25, [8, 8, 11, 11]); c.stroke();
+    if (o.suit && o.face !== 'back') { poly(c, gy(225), -4, -33 + dy, 4, -33 + dy, 0, -24 + dy); line(c, gy(15), 2, 0, -31 + dy, 0, -22 + dy); }
+    if (o.badge && o.face !== 'back') { line(c, gy(25), .8, -4, -33 + dy, 0, -25 + dy, 4, -33 + dy); rr(c, -3, -26 + dy, 6, 7, 1, gy(245)); }
+    if (o.band) rr(c, 8, -29 + dy, 6, 4, 1, gy(245));
+    arms.forEach(a => arm(...a));
+    if (o.env) { rr(c, -9, -27 + dy, 18, 12, 1, gy(232)); line(c, gy(150), .8, -9, -27 + dy, 0, -21 + dy, 9, -27 + dy); }
+    if (o.card) rr(c, 16, -42 + dy, 7, 5, 1, gy(245));
+    if (o.torch) rr(c, 17, -26 + dy, 8, 4, 1, gy(55));
+    if (o.case) { rr(c, 8, -14 + dy, 13, 10, 2, gy(28)); line(c, gy(28), 1.2, 12, -14 + dy, 12, -16 + dy, 17, -16 + dy, 17, -14 + dy); }
+    head(c, 0, -45 + dy, o);
+    c.restore();
+    if (o.torch) { const g = c.createLinearGradient(o.x + 25 * s, 0, o.x + 75 * s, 0); g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      poly(c, g, o.x + 25 * s, o.y - 24 * s, o.x + 80 * s, o.y - 45 * s, o.x + 80 * s, o.y + 5 * s); }
   }
 
   // ---- 카메라 배경 ----
@@ -178,34 +199,34 @@ const CCTV = (() => {
       if (t === '18:20') { // 카트 미는 여성
         rect(c, 188, 128, 26, 4, gy(60)); rect(c, 190, 108, 22, 20, gy(150)); rect(c, 192, 92, 18, 16, gy(165)); rect(c, 189, 112, 24, 2, gy(120));
         ell(c, 192, 140, 2.5, 2.5, gy(20)); ell(c, 210, 140, 2.5, 2.5, gy(20));
-        person(c, { x: 222, y: 142, h: 74, body: 175, hair: 'long', face: 'front', push: true, badge: true });
+        person(c, { x: 224, y: 142, h: 70, body: 190, hair: 'bob', face: 'front', push: true, badge: true });
       }
-      if (t === '21:50') person(c, { x: 238, y: 136, h: 70, body: 150, hair: 'short', face: 'right', card: true, badge: true });
-      if (t === '22:05') person(c, { x: 222, y: 141, h: 75, body: 150, hair: 'short', face: 'left', env: true, pose: 'walk', badge: true });
+      if (t === '21:50') person(c, { x: 236, y: 136, h: 68, body: 165, hair: 'short', glasses: true, face: 'right', card: true, badge: true });
+      if (t === '22:05') person(c, { x: 222, y: 141, h: 72, body: 165, hair: 'short', glasses: true, face: 'left', env: true, pose: 'walk', badge: true });
     },
     '02': (c, t) => {
       const on = t === '18:20'; cam02(c, on);
-      person(c, { x: 80, y: 122, h: 50, body: 70, hair: 'cap', face: 'front', pose: 'sit' });   // 경비원
+      person(c, { x: 80, y: 120, h: 46, body: 80, hair: 'cap', face: 'front', pose: 'sit' });   // 경비원
       if (t === '18:20') [[175, 0], [205, 4], [238, 2]].forEach(([x, d], i) =>
-        person(c, { x, y: 134 + d, h: 56, body: [150, 120, 170][i], hair: i === 2 ? 'long' : 'short', face: 'back', pose: 'walk' }));
-      if (t === '21:58') person(c, { x: 142, y: 160, h: 64, body: 38, legs: 30, hair: 'short', face: 'left', suit: true, case: true, badge: true });
-      if (t === '23:05') person(c, { x: 262, y: 168, h: 62, body: 115, hair: 'short', face: 'right', torch: true, band: true, pose: 'walk' });
+        person(c, { x, y: 134 + d, h: 50, body: [150, 120, 175][i], hair: ['short', 'buzz', 'bob'][i], face: 'back', pose: 'walk' }));
+      if (t === '21:58') person(c, { x: 142, y: 160, h: 60, body: 45, legs: 30, hair: 'slick', face: 'left', suit: true, case: true, badge: true });
+      if (t === '23:05') person(c, { x: 262, y: 168, h: 58, body: 115, hair: 'buzz', face: 'right', torch: true, band: true, pose: 'walk' });
     },
     '03': (c, t) => {
       cam03(c, t === '18:20');
       if (t === '22:14') {
         glow(c, 170, 110, 110, .38);
-        person(c, { x: 158, y: 104, h: 58, body: 150, hair: 'short', face: 'front', pose: 'sit', reach: true, badge: true });
+        person(c, { x: 156, y: 104, h: 54, body: 165, hair: 'short', glasses: true, face: 'front', pose: 'sit', reach: true, badge: true });
         rect(c, 176, 104, 18, 12, gy(225));                                                   // 테이블 위 봉투
-        person(c, { x: 214, y: 168, h: 62, body: 38, hair: 'short', face: 'back', pose: 'sit' }); // 방문자 (뒷모습)
+        person(c, { x: 214, y: 168, h: 58, body: 45, hair: 'slick', face: 'back', pose: 'sit' }); // 방문자 (뒷모습)
         rect(c, 232, 140, 22, 12, gy(30)); rect(c, 234, 137, 18, 3, gy(45));                  // 열린 서류가방
       }
     },
     '04': (c, t) => {
       cam04(c, t === '18:20', t);
-      if (t === '18:20') { person(c, { x: 95, y: 108, h: 46, body: 160, hair: 'long', face: 'front', pose: 'sit' });
-        person(c, { x: 180, y: 140, h: 62, body: 120, hair: 'short', face: 'left' }); }
-      if (t === '22:31') { person(c, { x: 194, y: 104, h: 58, body: 150, hair: 'short', face: 'right', pose: 'sit' });
+      if (t === '18:20') { person(c, { x: 95, y: 106, h: 44, body: 175, hair: 'bob', face: 'front', pose: 'sit' });
+        person(c, { x: 180, y: 140, h: 58, body: 125, hair: 'buzz', face: 'left' }); }
+      if (t === '22:31') { person(c, { x: 192, y: 104, h: 54, body: 165, hair: 'short', glasses: true, face: 'right', pose: 'sit' });
         glow(c, 205, 70, 30, .35); }
     },
   };
@@ -217,7 +238,7 @@ const CCTV = (() => {
       text(c, '보존문서', 160, 72, 24, gy(25), true); text(c, '2024', 160, 100, 24, gy(25), true); text(c, 'B-02', 205, 114, 12, gy(90)); },
     '01-21:50': c => { rect(c, 0, 0, W, H, gy(70)); rect(c, 230, 30, 50, 80, gy(30)); rect(c, 240, 45, 30, 20, gy(60)); ell(c, 255, 90, 4, 4, gy(220));
       poly(c, gy(170), 40, 180, 80, 120, 130, 110, 140, 140, 90, 180); rect(c, 100, 70, 120, 76, gy(240));
-      rect(c, 108, 80, 30, 38, gy(120)); text(c, '재난안전과', 182, 92, 12, gy(30)); text(c, '박도현', 182, 112, 24, gy(20), true); rect(c, 108, 128, 104, 10, gy(60)); },
+      rect(c, 108, 80, 30, 38, gy(120)); c.save(); c.beginPath(); c.rect(108, 80, 30, 38); c.clip(); head(c, 123, 100, { hair: 'short', glasses: true, face: 'front' }); c.restore(); text(c, '재난안전과', 182, 92, 12, gy(30)); text(c, '박도현', 182, 112, 24, gy(20), true); rect(c, 108, 128, 104, 10, gy(60)); },
     '02-21:58': c => { rect(c, 0, 0, W, H, gy(30)); poly(c, gy(205), 130, 0, 190, 0, 160, 70); line(c, gy(15), 8, 160, 5, 160, 75);
       line(c, gy(200), 2, 120, 0, 140, 80); line(c, gy(200), 2, 200, 0, 180, 80); rect(c, 110, 78, 100, 90, gy(240));
       text(c, 'VISITOR', 160, 98, 12, gy(60)); text(c, 'V-0731', 160, 128, 24, gy(15), true); rect(c, 120, 150, 80, 6, gy(120)); },
@@ -269,5 +290,6 @@ const CCTV = (() => {
     zoom: key => ZOOMS[key] ? make('Z' + key, ZOOMS[key]) : null,
     hasZoom: key => !!ZOOMS[key],
     shelter,
+    _person: person, // 테스트용
   };
 })();
