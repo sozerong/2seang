@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>마지막 입찰, 사라진 안전기준</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stage">
+
+  <!-- 타이틀 -->
+  <section id="title" class="screen">
+    <img id="titleCam" alt="">
+    <div class="noise"></div>
+    <div class="titleText">
+      <h1>마지막<br>입찰</h1>
+      <h2>사라진 안전기준</h2>
+      <nav>
+        <button class="menu" id="mStart">조사 시작</button>
+        <button class="menu" id="mSound">소리: 켜짐</button>
+      </nav>
+    </div>
+    <p class="credit">조달청 「AI를 활용한 게임 만들기」 공모전 출품작</p>
+    <p class="hintPC">PC 화면에서 플레이하세요 · 소리를 켜면 더 좋습니다</p>
+  </section>
+
+  <!-- 브리핑 -->
+  <section id="brief" class="screen hidden">
+    <div class="memo">
+      <div class="memoHead">조사 지시서 <span>조달청 감사담당관실</span></div>
+      <div id="briefText"></div>
+      <button class="menu" id="briefGo">[ 확인 ]</button>
+    </div>
+  </section>
+
+  <!-- 시간 카드 -->
+  <section id="card" class="screen hidden">
+    <div class="noise"></div>
+    <div class="cardBig">08:50 AM</div>
+    <div class="cardSub">D-DAY · 계약 승인 회의 10분 전</div>
+  </section>
+
+  <!-- 본 게임 -->
+  <section id="game" class="screen hidden">
+    <header id="hud">
+      <div class="clues" id="clues"></div>
+      <button id="reportBtn" class="hudBtn" disabled>조사 보고서</button>
+      <div class="clockBox">
+        <div id="clock">08:50 AM</div>
+        <div id="remain">남은 시간 10:00</div>
+      </div>
+    </header>
+
+    <div id="desk">
+      <div class="crt"><div class="crtBar" id="lbar"></div><div class="crtBody" id="left"></div><div class="scan"></div></div>
+      <div class="crt"><div class="crtBar" id="rbar"></div><div class="crtBody" id="right"></div><div class="scan"></div></div>
+    </div>
+
+    <div id="pad">
+      <div class="padLabel">증거수집 패드</div>
+      <div class="padCol"><h4>CCTV 캡처</h4><div class="cards" id="padCctv"></div></div>
+      <div class="padCol"><h4>서류</h4><div class="cards" id="padDoc"></div></div>
+      <div class="padSide">
+        <div id="selInfo">캡처 1장 + 서류 1장</div>
+        <button id="accuseBtn" disabled>의심 정황<br>보고</button>
+      </div>
+    </div>
+    <div id="msg"></div>
+    <div id="redflash"></div>
+  </section>
+
+  <!-- 엔딩 -->
+  <section id="ending" class="screen hidden">
+    <img id="endImg" alt="">
+    <div id="rain" class="hidden"></div>
+    <div class="endText">
+      <div id="endBig"></div>
+      <div id="endBody"></div>
+      <button class="menu hidden" id="again">다시 조사하기</button>
+    </div>
+  </section>
+
+  <div id="ov" class="hidden"><div id="box"></div></div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/cctv.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
