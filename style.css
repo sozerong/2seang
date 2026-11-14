@@ -59,7 +59,9 @@ img{image-rendering:pixelated}
 .chatErr{margin:60px auto;max-width:360px;text-align:center;line-height:1.8;border:2px solid var(--red);padding:20px;background:#170d0c}
 .chatErr b{font-family:Galmuri11B;font-weight:normal;color:var(--red);font-size:24px}
 #reMsg{color:var(--dim);margin-top:8px;min-height:18px}
-.briefNav{display:flex;justify-content:space-between;align-items:center}
+.memo{position:relative}
+#briefBack{position:absolute;left:14px;top:8px;font-size:12px;padding:2px 0}
+#briefBack::before{content:none}
 .hudBtn.home{color:var(--ink);border-color:#3a3d33;animation:none}
 .hudBtn.home:hover{border-color:var(--ink);background:#22241e}
 #briefText small{font-family:Galmuri11;font-size:12px;color:#4a4536}
