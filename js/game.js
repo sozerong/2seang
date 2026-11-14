@@ -60,6 +60,39 @@ $('mSound').onclick = () => { $('mSound').textContent = '소리: ' + (SFX.toggle
 let MODE = 'hard';
 $('mEasy').onclick = () => { MODE = 'easy'; SFX.init(); SFX.hum(); SFX.click(); briefing(); };
 $('mHard').onclick = () => { MODE = 'hard'; SFX.init(); SFX.hum(); SFX.click(); briefing(); };
+// ---------- 튜토리얼 ----------
+const TUT = () => [
+  ['목표', `<p>한빛시 비상전원장치 입찰에서 기준 미달 업체가 낙찰 예정이다.</p>
+    <p>계약 승인 회의(09:00)까지 <b>10분</b> 안에, 서류와 CCTV 장면을 짝지어 <b>의심 정황 3건</b>을 찾아 보고하면 된다.</p>
+    <div class="shot"><div class="clue on">단서 1 확보</div><div class="clue">단서 2 ? ? ?</div><div class="clue">단서 3 ? ? ?</div><span>찾은 단서는 화면 위에 채워진다</span></div>`],
+  ['왼쪽 모니터: 서류', `<p>바탕화면의 <b>한빛시 제출자료</b> 폴더를 열어 서류를 읽는다.</p>
+    <p>잠긴 폴더와 서류는 <b>비밀번호 4자리</b>가 필요하다. 비밀번호의 힌트는 다른 서류나 CCTV 화면 속에 숨어 있다. 3번 틀리면 힌트가 뜬다.</p>
+    <p>의심되는 서류는 아래 패드로 <b>끌어다 놓거나</b> [패드에 담기]를 누른다.</p>
+    <div class="shot"><div class="file"><img src="${ICON.file}">예시_서류.pdf<span class="tag">끌어서 패드로</span></div><div class="file"><img src="${ICON.file}">잠긴_서류.xlsx<span class="tag lock">[잠김]</span></div></div>`],
+  ['오른쪽 모니터: CCTV', `<p>위쪽 <b>시간 버튼</b>을 누르면 카메라 4대 화면이 그 시각으로 바뀐다.</p>
+    <p>화면을 <b>눌러서 크게</b> 보고, [확대]로 자세히 본 뒤, 수상한 장면은 <b>[캡처]</b>해 패드에 담는다.</p>
+    <div class="shot"><img src="${CCTV.scene('02', '18:20')}"><span>CAM 02 · 18:20 예시</span></div>`],
+  ['증거수집 패드', `<p>패드에서 <b>CCTV 캡처 1장 + 서류 1장</b>을 골라 빨간 버튼을 누른다.</p>
+    <p>맞는 짝이면 단서 확보. <b>정상 업무를 의심하면 30초가 차감</b>되고, 관계없는 짝은 감점 없이 "관련성 부족"만 뜬다.</p>
+    <div class="shot"><div class="card cc sel" style="position:static"><img src="${CCTV.scene('02', '18:20')}" style="width:96px"><span>CAM02 18:20</span></div>
+      <div class="card dc sel" style="position:static">예시_서류.pdf</div><span>+</span><div class="mockBtn">의심 정황<br>보고</div></div>`],
+  ['보고서와 힌트', `<p>단서 3개를 모두 찾으면 오른쪽 위 <b>[조사 보고서]</b>에서 조치를 고른다. 무엇을 고르느냐에 따라 엔딩이 달라진다.</p>
+    <p><b>쉬움 모드</b>에서는 바탕화면 <b>[메신저]</b>로 조사팀장에게 힌트를 받을 수 있다. 힌트를 하나 받으면 다음 힌트까지 2분을 기다려야 한다.</p>
+    <p><b>어려움 모드</b>에서는 메신저 서버가 고장 나 있다. 혼자 힘으로 풀어야 한다.</p>
+    <div class="shot"><img src="${ICON.chat}" style="width:32px;height:32px">메신저<span style="margin-left:20px">신고접수 폴더부터 확인해 보자.</span></div>`],
+];
+let tutI = 0;
+function tutorial(i = 0){
+  const T = TUT(); tutI = Math.max(0, Math.min(T.length - 1, i)); show('tutorial');
+  $('tutPage').textContent = `${tutI + 1} / ${T.length}`;
+  $('tutBody').innerHTML = `<h3>${T[tutI][0]}</h3>${T[tutI][1]}`;
+  $('tPrev').disabled = tutI === 0; $('tNext').disabled = tutI === T.length - 1;
+}
+$('mTut').onclick = () => { SFX.init(); SFX.click(); tutorial(0); };
+$('tPrev').onclick = () => { SFX.click(); tutorial(tutI - 1); };
+$('tNext').onclick = () => { SFX.click(); tutorial(tutI + 1); };
+$('tExit').onclick = () => { SFX.click(); show('title'); };
+
 
 const BRIEF = `한빛시가 대피소용 비상전원장치 200대 구매를 요청했다.
 입찰 업체는 윤슬파워, 영래에너지, 주혁볼트.
@@ -178,13 +211,13 @@ function renderLeft(){
     bar.innerHTML = 'C:\\바탕화면';
     const deco = [['globe','크롬'],['pc','내 PC'],['trash','휴지통'],['gear','제어판']];
     body.innerHTML = `<div class="icons">${deco.map(([i, n]) => `<div class="icon deco"><img src="${ICON[i]}">${n}</div>`).join('')}
-      <div class="icon" id="msgr"><img src="${ICON.chat}">메신저${S.mode === 'hard' ? '<small class="lk">잠김</small>' : ''}</div>
+      <div class="icon" id="msgr"><img src="${ICON.chat}">메신저</div>
       <div class="icon" id="root"><img src="${ICON.folder}">한빛시 제출자료</div></div>`;
-    $('msgr').onclick = () => S.mode === 'hard' ? (SFX.deny(), msg('', '어려움 모드에서는 메신저가 잠겨 있습니다.', '', 1600)) : go({type:'chat'});
+    $('msgr').onclick = () => go({type:'chat'});
     body.querySelectorAll('.deco').forEach(e => e.onclick = () => { SFX.deny(); msg('', '조사와 관련 없는 항목입니다.', '', 1400); });
     $('root').onclick = () => go({type:'root'});
   } else if (v.type === 'chat'){
-    bar.innerHTML = `${bk} 메신저 · 조사팀장`;
+    bar.innerHTML = `${bk} 메신저${S.mode === 'hard' ? '' : ' · 조사팀장'}`;
     renderChat(body);
   } else if (v.type === 'root'){
     bar.innerHTML = `${bk} C:\\한빛시 제출자료`;
@@ -292,6 +325,12 @@ const HINTS = {
 // 아직 못 푼 단서 중 힌트를 안 준 가장 앞 번호
 const nextHint = () => [1, 2, 3].find(n => !S.clues[n] && !S.given.includes(n));
 function renderChat(body){
+  if (S.mode === 'hard'){ // 어려움 모드: 메신저 서버가 죽어 있다
+    SFX.deny();
+    body.innerHTML = `<div class="chatErr"><b>메신저 서버 오류</b><br>서버에 연결할 수 없습니다.<br>잠시 후 다시 시도해 주세요. (오류 코드 503)<br><br><button class="btn" id="reconn">다시 연결</button><div id="reMsg"></div></div>`;
+    let n = 0; $('reconn').onclick = () => { SFX.deny(); $('reMsg').textContent = `연결 실패 (${++n}회)`; };
+    return;
+  }
   body.innerHTML = `<div class="chat" id="chatLog">${S.chat.map(m => `<div class="bub ${m.me ? 'me' : ''}"><span>${m.me ? '나' : '조사팀장'}</span>${m.text}</div>`).join('')}</div>
     <div class="chatBar"><button class="btn hot" id="askHint"></button></div>`;
   $('chatLog').scrollTop = 1e6; hintBtn();

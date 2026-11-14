@@ -18,13 +18,23 @@
       <h1>마지막<br>입찰</h1>
       <h2>사라진 안전기준</h2>
       <nav>
-        <button class="menu" id="mEasy">쉬움 모드 <small>힌트 메신저 사용</small></button>
-        <button class="menu" id="mHard">어려움 모드 <small>힌트 없음</small></button>
+        <button class="menu" id="mEasy">쉬움 모드</button>
+        <button class="menu" id="mHard">어려움 모드</button>
+        <button class="menu" id="mTut">튜토리얼</button>
         <button class="menu" id="mSound">소리: 켜짐</button>
       </nav>
     </div>
     <p class="credit">조달청 「AI를 활용한 게임 만들기」 공모전 출품작</p>
     <p class="hintPC">PC 화면에서 플레이하세요 · 소리를 켜면 더 좋습니다</p>
+  </section>
+
+  <!-- 튜토리얼 -->
+  <section id="tutorial" class="screen hidden">
+    <div class="memo tut">
+      <div class="memoHead">튜토리얼 <span class="from" id="tutPage"></span></div>
+      <div id="tutBody"></div>
+      <div class="tutNav"><button class="menu" id="tPrev">◀ 이전</button><button class="menu" id="tExit">타이틀로</button><button class="menu" id="tNext">다음 ▶</button></div>
+    </div>
   </section>
 
   <!-- 브리핑 -->

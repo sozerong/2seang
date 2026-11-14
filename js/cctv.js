@@ -98,6 +98,21 @@ const CCTV = (() => {
       poly(c, g, o.x + 25 * s, o.y - 24 * s, o.x + 80 * s, o.y - 45 * s, o.x + 80 * s, o.y + 5 * s); }
   }
 
+  // 비상구 표지: 초록 바탕에 문으로 달려가는 사람 (글자 없이 그림만)
+  function exitSign(c, x, y, w, h, bg, fg) {
+    rect(c, x, y, w, h, bg);
+    const s = h / 10;
+    c.fillStyle = fg; c.fillRect(x + w * .66, y + h * .15, w * .2, h * .7);                       // 문
+    c.fillStyle = bg; c.fillRect(x + w * .66 + s * .9, y + h * .15 + s * .9, w * .2 - s * 1.8, h * .7 - s * .9);
+    const cx = x + w * .4, cy = y + h * .52;
+    ell(c, cx + s * 1.3, cy - s * 3.1, s * 1.15, s * 1.15, fg);                                   // 머리
+    line(c, fg, s * 1.4, cx + s * .8, cy - s * 1.7, cx - s * .5, cy + s * 1.1);                    // 몸
+    line(c, fg, s * 1.1, cx + s * .5, cy - s * 1.1, cx + s * 2.2, cy - s * .2);                    // 앞팔
+    line(c, fg, s * 1.1, cx + s * .5, cy - s * 1.1, cx - s * 1.5, cy - s * 1.8);                   // 뒷팔
+    line(c, fg, s * 1.2, cx - s * .5, cy + s * 1.1, cx + s * 1.3, cy + s * 2.1, cx + s * 1.7, cy + s * 3.5); // 앞다리
+    line(c, fg, s * 1.2, cx - s * .5, cy + s * 1.1, cx - s * 1.7, cy + s * 2.5, cx - s * 3.1, cy + s * 2.3); // 뒷다리
+  }
+
   // ---- 원근 투영 (한 점 투시) ----
   // 방 좌표(m): x 오른쪽, y 아래쪽(카메라 높이가 0, 바닥이 +), z 깊이
   function view(cx, cy, f) {
@@ -212,7 +227,7 @@ const CCTV = (() => {
     else lighting(c, .92, []);
     fx.forEach(z => { const on = lit.includes(z); V.flat(c, C + .03, -.32, .32, z - .55, z + .55, gy(on ? 250 : 95));
       if (on) { const [x, y] = V.p(0, F, z); glow(c, x, y, 30 * 4.6 / z, .12); } });
-    V.wallZ(c, Z1 - .01, -.25, .25, .05, .25, gy(235)); V.txt(c, '비상구', 0, .15, Z1, 6, gy(30));   // 비상구 표시등
+    { const [x0, y0] = V.p(-.42, -.06, Z1), [x1, y1] = V.p(.42, .26, Z1); exitSign(c, x0, y0, x1 - x0, y1 - y0, gy(70), gy(245)); }   // 비상구 표시등
     const [lx, ly] = V.p(1.17, 1.12, 3.9); rect(c, lx - .8, ly - .8, 1.6, 1.6, gy(255));          // 단말기 LED
     V.txt(c, '자료보관실', 1.17, .03, 4.8, 6, gy(30), true); V.txt(c, '3-10', -1.17, .21, 3.3, 6, gy(40));
     V.txt(c, '관계자 외', 1.16, 1.05, 4.5, 6, gy(40));
@@ -428,7 +443,7 @@ const CCTV = (() => {
       for (let i = 0; i < 9; i++) { const x = 20 + i * 35, y = 120 + (i % 3) * 18;
         rect(c, x - 14, y + 4, 30, 10, lit ? col(70, 90, 130) : 'rgb(14,16,22)');
         ell(c, x, y - 6, 4, 5, lit ? col(60, 45, 35) : 'rgb(4,4,6)'); poly(c, lit ? col(80, 70, 90) : 'rgb(5,5,8)', x - 7, y + 6, x + 7, y + 6, x + 5, y - 2, x - 5, y - 2); }
-      if (!lit) { glow(c, 268, 72, 36, .3, '60,200,110'); rect(c, 248, 66, 40, 13, 'rgb(30,130,65)'); text(c, '비상구', 268, 73, 12, 'rgb(200,255,215)'); }
+      if (!lit) { glow(c, 268, 72, 36, .3, '60,200,110'); exitSign(c, 248, 63, 40, 17, 'rgb(30,130,65)', 'rgb(210,255,220)'); }
       if (lit) [50, 160, 270].forEach(x => { rect(c, x - 14, 4, 28, 3, 'rgb(255,240,200)'); glow(c, x, 60, 120, .35, '255,220,160'); });
       seed('S'); const d = pixels(c), p = d.data;
       for (let i = 0; i < p.length; i += 4) { const n = (rnd() - .5) * 14; p[i] += n; p[i + 1] += n; p[i + 2] += n; }
