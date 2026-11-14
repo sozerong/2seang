@@ -127,6 +127,7 @@ function briefing(){
   const skip = typeOut($('briefText'), text, 22, () => $('briefGo').classList.remove('hidden'));
   $('brief').onclick = e => { if (e.target.id !== 'briefGo') skip(); };
   $('briefGo').onclick = () => { SFX.click(); timeCard(); };
+  $('briefBack').onclick = () => { SFX.click(); show('title'); };
 }
 function timeCard(){
   show('card'); SFX.static(.5, .1);
@@ -146,7 +147,7 @@ function startGame(){
 const p2 = n => String(n).padStart(2, '0');
 const TOTAL = 10 * 60; // 제한 시간(초). 회의는 09:00, 시작 시각은 거기서 역산
 function tick(){
-  if (S.over) return;
+  if (S.over || S.paused) return;
   S.t--; renderClock();
   if (S.t <= 30 && S.t > 0) SFX.tick();
   if (S.t === 300) { SFX.deny(); msg('08:55 AM', '회의까지 5분 남았습니다.', 'bad', 2400); }
@@ -176,7 +177,7 @@ function msg(big, small = '', cls = '', dur = 2600){
   clearTimeout(msgT); msgT = setTimeout(() => m.className = '', dur);
 }
 function modal(html, cls = ''){ $('box').className = cls; $('box').innerHTML = html; $('ov').classList.remove('hidden'); }
-function closeModal(){ $('ov').classList.add('hidden'); }
+function closeModal(){ $('ov').classList.add('hidden'); if (S) S.paused = false; }
 addEventListener('keydown', e => { if (e.key === 'Escape' && !$('ov').classList.contains('hidden')) closeModal(); });
 
 function askPw(key, pw, hint, ok){
@@ -444,6 +445,14 @@ $('again').onclick = () => { SFX.click(); show('title'); };
 function renderAll(){ renderClock(); renderClues(); renderLeft(); renderRight(); renderPad(); }
 $('accuseBtn').onclick = accuse;
 $('reportBtn').onclick = report;
+// 게임 중 메인으로: 확인 창이 떠 있는 동안 시간은 멈춘다
+$('homeBtn').onclick = () => {
+  SFX.click(); S.paused = true;
+  modal(`<h2>메인으로 갈까요?</h2><p>지금까지 조사한 내용은 저장되지 않습니다.</p>
+    <div class="row"><button class="btn" id="hC">계속 조사</button><button class="btn hot" id="hO">메인으로</button></div>`);
+  $('hC').onclick = closeModal;
+  $('hO').onclick = () => { S.over = true; clearInterval(timer); closeModal(); SFX.click(); show('title'); };
+};
 const pad = $('pad');
 pad.ondragover = e => { e.preventDefault(); pad.classList.add('over'); };
 pad.ondragleave = () => pad.classList.remove('over');
