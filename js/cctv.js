@@ -16,7 +16,10 @@ const CCTV = (() => {
     g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); };
   const text = (c, s, x, y, size, f, bold, align = 'center') => { c.font = `${bold ? 'bold ' : ''}${size}px ${bold ? 'Galmuri11B' : 'Galmuri11'}`;
     c.fillStyle = f; c.textAlign = align; c.textBaseline = 'middle'; c.fillText(s, x, y); };
-  const canvas = () => { const cv = document.createElement('canvas'); cv.width = W * SS; cv.height = H * SS; const c = cv.getContext('2d'); c.scale(SS, SS); return [cv, c]; };
+  const canvas = (ss = SS) => { const cv = document.createElement('canvas'); cv.width = W * ss; cv.height = H * ss; const c = cv.getContext('2d'); c.scale(ss, ss); return [cv, c]; };
+  // 아주 작은 글씨 (방문증 번호, 완장, 모니터 글자). 평소 화면에선 안 읽히고 확대경으로 봐야 읽힌다
+  const tiny = (c, s, x, y, size, f) => { c.font = `bold ${size}px "Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR",sans-serif`;
+    c.fillStyle = f; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(s, x, y); };
 
   function vignette(c, k = .8) { const g = c.createRadialGradient(W / 2, H / 2, H * .25, W / 2, H / 2, W * .62);
     g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, `rgba(0,0,0,${k})`); c.fillStyle = g; c.fillRect(0, 0, W, H); }
@@ -85,11 +88,13 @@ const CCTV = (() => {
     rr(c, -11, -33 + dy, 22, 25, [8, 8, 11, 11], side(B, -11, 11));
     c.strokeStyle = gy(15, .4); c.lineWidth = 1; c.beginPath(); c.roundRect(-11, -33 + dy, 22, 25, [8, 8, 11, 11]); c.stroke();
     if (o.suit && o.face !== 'back') { poly(c, gy(225), -4, -33 + dy, 4, -33 + dy, 0, -24 + dy); line(c, gy(15), 2, 0, -31 + dy, 0, -22 + dy); }
-    if (o.badge && o.face !== 'back') { line(c, gy(25), .8, -4, -33 + dy, 0, -25 + dy, 4, -33 + dy); rr(c, -3, -26 + dy, 6, 7, 1, gy(245)); }
-    if (o.band) rr(c, 8, -29 + dy, 6, 4, 1, gy(245));
+    if (o.badge && o.face !== 'back') { line(c, gy(25), .8, -4, -33 + dy, 0, -25 + dy, 4, -33 + dy);
+      if (o.badgeText) { rr(c, -5, -26.5 + dy, 10, 7, 1, gy(245)); tiny(c, o.badgeText, 0, -23 + dy, 2.2, gy(15)); } else rr(c, -3, -26 + dy, 6, 7, 1, gy(245)); }
     arms.forEach(a => arm(...a));
-    if (o.env) { rr(c, -9, -27 + dy, 18, 12, 1, gy(232)); line(c, gy(150), .8, -9, -27 + dy, 0, -21 + dy, 9, -27 + dy); }
-    if (o.card) rr(c, 16, -42 + dy, 7, 5, 1, gy(245));
+    if (o.band) { rr(c, 7.6, -30 + dy, 7.4, 4.6, 1, gy(245)); tiny(c, '당직', 11.3, -27.7 + dy, 2.5, gy(15)); }
+    if (o.env) { rr(c, -9, -27 + dy, 18, 12, 1, gy(232)); line(c, gy(150), .8, -9, -27 + dy, 0, -21 + dy, 9, -27 + dy);
+      tiny(c, 'EV-2417', 0, -20 + dy, 2.6, gy(20)); c.strokeStyle = gy(40); c.lineWidth = .4; c.strokeRect(1.5, -18.4 + dy, 6.4, 2.8); tiny(c, '대외비', 4.7, -17 + dy, 1.9, gy(35)); }
+    if (o.card) { rr(c, 14.5, -46 + dy, 11, 7.5, 1, gy(245)); rr(c, 15.3, -45.2 + dy, 3, 4, .5, gy(140)); tiny(c, '재난안전과', 21.6, -44.3 + dy, 1.25, gy(40)); tiny(c, '박도현', 21.6, -41.5 + dy, 2.2, gy(15)); }
     if (o.torch) rr(c, 17, -26 + dy, 8, 4, 1, gy(55));
     if (o.case) { rr(c, 8, -14 + dy, 13, 10, 2, gy(28)); line(c, gy(28), 1.2, 12, -14 + dy, 12, -16 + dy, 17, -16 + dy, 17, -14 + dy); }
     head(c, 0, -45 + dy, o);
@@ -141,7 +146,7 @@ const CCTV = (() => {
   // 밤 조명: 화면 전체를 어둡게 덮고, 광원 자리만 둥글게 뚫는다. L = [x, y, 반지름, 세기, 세로비율]
   function lighting(c, amb, lights) {
     const cv = c.canvas, o = document.createElement('canvas'); o.width = cv.width; o.height = cv.height;
-    const g = o.getContext('2d'); g.scale(SS, SS);
+    const g = o.getContext('2d'); g.scale(cv.width / W, cv.height / H);
     g.fillStyle = `rgba(0,0,0,${1 - amb})`; g.fillRect(0, 0, W, H);
     g.globalCompositeOperation = 'destination-out';
     for (const [x, y, r, a = 1, sy = 1] of lights) {
@@ -219,6 +224,7 @@ const CCTV = (() => {
       V.ln(c, gy(90), 1.2, .6, 2.22, 4.5, .62, 1.55, 4.5);
       V.box(c, .08, .6, 1.9, 2.22, 4.03, 4.47, gy(215), gy(185), gy(150)); V.box(c, .12, .56, 1.6, 1.9, 4.06, 4.44, gy(220), gy(190), gy(155));
       V.box(c, .2, .48, 1.68, 1.78, 4.05, 4.06, null, gy(240), null);                            // 상자 라벨
+      { const [a, b] = V.p(.34, 1.73, 4.05); tiny(c, '보존문서 2024', a, b, 1.25, gy(25)); }
       [4.03, 4.47].forEach(z => [.08, .58].forEach(x => { const [a, b] = V.p(x, F - .04, z); ell(c, a, b, 1.5, 1.5, gy(30)); })); }
     // 조명
     const fx = [2.2, 4.6, 7.0, 9.4];
@@ -274,13 +280,14 @@ const CCTV = (() => {
     // 사람
     if (t === '18:20') [[.6, 7.8, 'short', 150], [1.7, 8.3, 'buzz', 120], [2.9, 7.6, 'bob', 175]].forEach(([x, z, hair, body]) =>
       V.actor(c, x, z, F, { body, hair, face: 'back', pose: 'walk' }));
-    if (t === '21:58') V.actor(c, -.85, 4.4, F, { body: 45, legs: 30, hair: 'slick', face: 'left', suit: true, case: true, badge: true });
+    if (t === '21:58') V.actor(c, -.85, 4.4, F, { body: 45, legs: 30, hair: 'slick', face: 'left', suit: true, case: true, badge: true, badgeText: 'V-0731' });
     if (t === '23:05') V.actor(c, 3.7, 5.0, F, { body: 115, hair: 'buzz', face: 'right', torch: true, band: true, pose: 'walk' });
     // 조명
     const downs = [[-6, 3.5], [-2, 3.5], [2, 3.5], [6, 3.5], [-6, 7], [-2, 7], [2, 7], [6, 7]];
     const on = day ? downs : [[-6, 3.5], [2, 7], [6, 3.5]];
     const L = on.map(([x, z]) => [...V.p(x, F, z), 70 * 3.5 / z, .9, .5]);
     L.push([...V.p(-3.3, 1.9, 5.2), 48, 1], [...V.p(0, 1.5, Z1), 60, day ? 1 : .35], [...V.p(-8.99, 1.15, 6.7), 22, .5]);
+    if (t === '21:58') L.push([...V.p(-.85, 2.3, 4.4), 34, .85]);
     if (t === '23:05') L.push([...V.p(3.7, 2.4, 5.0), 40, .9], [...V.p(5.4, 2.6, 5.2), 55, 1, .6]);
     lighting(c, day ? .9 : .24, L);
     downs.forEach(([x, z]) => { const [a, b] = V.p(x, C + .01, z), r = V.s(z) * .22; ell(c, a, b, r, r * .35, gy(on.some(o => o[0] === x && o[1] === z) ? 252 : 110)); });
@@ -316,15 +323,16 @@ const CCTV = (() => {
     [-.9, 0, .9].forEach(x => chair(c, V, x, 6.2, F, false));
     [-.9, 0, .9].forEach(x => V.box(c, x - .23, x + .23, F - 1.05, F - .52, 6.45, 6.52, gy(70), gy(65), gy(50)));
     if (meet) V.actor(c, -.05, 5.95, F, { body: 165, hair: 'short', glasses: true, face: 'front', pose: 'sit', reach: true, badge: true }, 1.6);
-    [4.0, 5.1].forEach(z => { chair(c, V, -1.75, z, F, false, 60, -1); chair(c, V, 1.75, z, F, false, 60, 1); });
+    [4.0, 5.1].forEach(z => { chair(c, V, -1.75, z, F, false, 60, -1); if (!(meet && z === 4.0)) chair(c, V, 1.75, z, F, false, 60, 1); });
+    if (meet) { chair(c, V, 1.75, 4.0, F, false, 60, 1); V.actor(c, 1.72, 4.0, F, { body: 45, hair: 'slick', face: 'left', pose: 'sit', suit: true, badge: true, badgeText: 'V-0731' }, 1.6);
+      V.box(c, 2.0, 2.45, 2.0, F, 3.3, 3.6, gy(55), gy(35), gy(30)); }                       // 바닥에 둔 서류가방
     V.box(c, -1.3, 1.3, 1.65, 1.72, 3.2, 5.8, gy(192), gy(120), gy(105));                        // 테이블
     V.box(c, -1.1, 1.1, 1.72, F, 3.3, 3.32, null, gy(85), null);
     [[-.9, 3.6], [.9, 3.6], [-.9, 5.4], [.9, 5.4]].forEach(([x, z]) => V.box(c, x - .04, x + .04, 1.42, 1.65, z, z + .08, gy(230), gy(205), gy(180))); // 물병
     V.box(c, -.6, .0, 1.6, 1.65, 5.2, 5.6, gy(55), gy(45), null);                                // 노트북
-    if (meet) { V.flat(c, 1.64, .05, .55, 4.3, 4.85, gy(238)); V.ln(c, gy(160), .5, .05, 1.639, 4.3, .3, 1.639, 4.55); } // 봉투
-    if (meet) { V.actor(c, .6, 2.95, F, { body: 45, hair: 'slick', face: 'back', pose: 'sit' }, 1.6);
-      V.box(c, 1.15, 1.6, 1.62, 1.95, 2.8, 3.15, gy(55), gy(35), gy(30)); chair(c, V, -.6, 2.8, F); }  // 열린 서류가방
-    else [-.6, .6].forEach(x => chair(c, V, x, 2.8, F));
+    if (meet) { V.flat(c, 1.64, .45, 1.05, 3.9, 4.45, gy(238)); V.ln(c, gy(160), .5, .45, 1.639, 3.9, .75, 1.639, 4.15);   // 봉투
+      const [a, b] = V.p(.75, 1.64, 4.25); tiny(c, 'EV-2417', a, b, 1.6, gy(30)); }
+    [-.6, .6].forEach(x => chair(c, V, x, 2.8, F));
     // 조명
     const L = [];
     if (day) L.push([...V.p(-1.9, 1, Z1), 70, .8]);
@@ -390,45 +398,19 @@ const CCTV = (() => {
     if (late) L.push([...V.p(2.45, F - 1.1, 5.4), 58, .9], [...V.p(2.4, F, 5.0), 50, .5, .5]);
     lighting(c, day ? .88 : late ? .14 : .17, L);
     [3, 6, 9].forEach(z => [-2.5, 2.5].forEach(x => V.flat(c, C + .02, x - .5, x + .5, z - .4, z + .4, gy(day ? 250 : 90))));
-    if (late) { V.box(c, 2.33, 2.82, F - 1.14, F - .8, 5.49, 5.5, null, gy(250), null); const [a, b] = V.p(2.58, F - .97, 5.49); glow(c, a, b, 26, .35); }
+    if (late) { V.box(c, 2.33, 2.82, F - 1.14, F - .8, 5.49, 5.5, null, gy(250), null); const [a, b] = V.p(2.58, F - .97, 5.49);
+      rect(c, a - 6.6, b - 4.6, 13.2, 2, gy(120)); tiny(c, '평가관리시스템', a, b - 3.6, 1.1, gy(250));
+      tiny(c, '주혁볼트 부적합→적합', a, b - .9, 1.05, gy(40)); tiny(c, '수정 저장 완료', a, b + 2.2, 1.35, gy(15)); glow(c, a, b, 26, .25); }
   }
 
   const SCENES = { '01': cam01, '02': cam02, '03': cam03, '04': cam04 };
 
-  // ---- 확대 화면 ----
-  const ZOOMS = {
-    '01-18:20': c => { rect(c, 0, 0, W, H, gy(40)); poly(c, gy(150), 30, 30, 290, 20, 300, 170, 20, 175);
-      line(c, gy(110), 3, 30, 90, 295, 85); rect(c, 95, 50, 130, 70, gy(235));
-      text(c, '보존문서', 160, 72, 24, gy(25), true); text(c, '2024', 160, 100, 24, gy(25), true); text(c, 'B-02', 205, 114, 12, gy(90)); },
-    '01-21:50': c => { rect(c, 0, 0, W, H, gy(70)); rect(c, 230, 30, 50, 80, gy(30)); rect(c, 240, 45, 30, 20, gy(60)); ell(c, 255, 90, 4, 4, gy(220));
-      poly(c, gy(170), 40, 180, 80, 120, 130, 110, 140, 140, 90, 180); rect(c, 100, 70, 120, 76, gy(240));
-      rect(c, 108, 80, 30, 38, gy(120)); c.save(); c.beginPath(); c.rect(108, 80, 30, 38); c.clip(); head(c, 123, 100, { hair: 'short', glasses: true, face: 'front' }); c.restore(); text(c, '재난안전과', 182, 92, 12, gy(30)); text(c, '박도현', 182, 112, 24, gy(20), true); rect(c, 108, 128, 104, 10, gy(60)); },
-    '02-21:58': c => { rect(c, 0, 0, W, H, gy(30)); poly(c, gy(205), 130, 0, 190, 0, 160, 70); line(c, gy(15), 8, 160, 5, 160, 75);
-      line(c, gy(200), 2, 120, 0, 140, 80); line(c, gy(200), 2, 200, 0, 180, 80); rect(c, 110, 78, 100, 90, gy(240));
-      text(c, 'VISITOR', 160, 98, 12, gy(60)); text(c, 'V-0731', 160, 128, 24, gy(15), true); rect(c, 120, 150, 80, 6, gy(120)); },
-    '01-22:05': c => { rect(c, 0, 0, W, H, gy(50)); poly(c, gy(215), 40, 20, 280, 26, 276, 164, 44, 160);
-      poly(c, gy(190), 40, 20, 280, 26, 160, 62); text(c, 'EV-2417', 150, 104, 24, gy(25), true);
-      c.save(); c.translate(220, 135); c.rotate(-.12); c.strokeStyle = gy(40); c.lineWidth = 3; c.strokeRect(-36, -14, 72, 28); text(c, '대외비', 0, 0, 24, gy(40), true); c.restore(); },
-    '03-22:14': c => { rect(c, 0, 0, W, H, gy(120)); poly(c, gy(220), 20, 70, 150, 60, 160, 150, 30, 160);
-      text(c, 'EV-2417', 90, 108, 12, gy(40), true); poly(c, gy(170), 0, 130, 40, 120, 60, 140, 20, 170);
-      rect(c, 180, 0, 140, 180, gy(32)); line(c, gy(200), 2, 230, 0, 240, 60); line(c, gy(200), 2, 290, 0, 280, 60);
-      rect(c, 215, 58, 90, 64, gy(240)); text(c, 'VISITOR', 260, 74, 12, gy(60)); text(c, 'V-0731', 260, 100, 24, gy(15), true); },
-    '04-22:31': c => { rect(c, 0, 0, W, H, gy(10)); rect(c, 30, 14, 260, 150, gy(40)); rect(c, 40, 22, 240, 132, gy(225));
-      rect(c, 40, 22, 240, 16, gy(90)); text(c, '평가관리시스템', 46, 30, 12, gy(245), false, 'left');
-      text(c, 'EV-2417  주혁볼트', 50, 54, 12, gy(40), false, 'left'); text(c, '부적합 → 적합', 50, 70, 12, gy(40), false, 'left');
-      rect(c, 80, 88, 160, 50, gy(250)); c.strokeStyle = gy(40); c.lineWidth = 2; c.strokeRect(80, 88, 160, 50);
-      text(c, '수정 저장 완료', 160, 106, 12, gy(20), true); text(c, '22:31:07', 160, 124, 12, gy(90)); },
-    '02-23:05': c => { rect(c, 0, 0, W, H, gy(25)); poly(c, gy(110), 40, 0, 200, 0, 230, 180, 60, 180);
-      poly(c, gy(240), 52, 60, 208, 52, 214, 104, 58, 112); text(c, '당직', 133, 82, 24, gy(25), true);
-      rect(c, 230, 120, 60, 22, gy(60)); glow(c, 300, 131, 40, .7); },
-  };
-
-  function make(key, draw, tint = true) {
+  function make(key, draw, tint = true, ss = SS) {
     if (cache[key]) return cache[key];
-    seed(key); const [cv, c] = canvas(); c.imageSmoothingEnabled = false;
+    seed(key); const [cv, c] = canvas(ss); c.imageSmoothingEnabled = false;
     draw(c); if (!key.startsWith('Z') && !key.startsWith('S')) tapeFx(c);
     if (tint) { vignette(c, key.startsWith('Z') ? .55 : .8); finish(c); }
-    return cache[key] = cv.toDataURL();
+    return cache[key] = ss > SS ? cv.toDataURL('image/jpeg', .85) : cv.toDataURL();
   }
 
   // 대피소 (엔딩용, 컬러)
@@ -453,8 +435,8 @@ const CCTV = (() => {
 
   return {
     scene: (cam, time) => make(`${cam}-${time}`, c => SCENES[cam](c, time)),
-    zoom: key => ZOOMS[key] ? make('Z' + key, ZOOMS[key]) : null,
-    hasZoom: key => !!ZOOMS[key],
+    // 확대경용 고해상도 (6배). 같은 장면을 크게 그려서 작은 글씨까지 읽힌다
+    sceneHi: (cam, time) => make(`${cam}-${time}@hi`, c => SCENES[cam](c, time), true, 6),
     shelter,
     _person: person, // 테스트용
   };
