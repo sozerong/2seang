@@ -177,7 +177,7 @@ const CCTV = (() => {
     rect(c, 0, 0, 320, 64, gy(55 * L));
     for (let i = 0; i < 4; i++) rect(c, 10 + i * 58, 12, 44, 30, gy(on ? 60 : 8)); // 창
     // 벽시계
-    const cx = 270, cy = 26; ell(c, cx, cy, 13, 13, gy(on ? 200 : 120)); ell(c, cx, cy, 11, 11, gy(on ? 235 : 150));
+    const cx = 262, cy = 38; ell(c, cx, cy, 13, 13, gy(on ? 200 : 120)); ell(c, cx, cy, 11, 11, gy(on ? 235 : 150));
     const [hh, mm] = time.split(':').map(Number), ha = ((hh % 12) + mm / 60) / 12 * Math.PI * 2, ma = mm / 60 * Math.PI * 2;
     line(c, gy(20), 2, cx, cy, cx + Math.sin(ha) * 6, cy - Math.cos(ha) * 6);
     line(c, gy(20), 1.2, cx, cy, cx + Math.sin(ma) * 9, cy - Math.cos(ma) * 9);
@@ -269,7 +269,7 @@ const CCTV = (() => {
   // 대피소 (엔딩용, 컬러)
   function shelter(lit) {
     return make('S' + lit, c => {
-      const k = lit ? 1 : .12, col = (r, g, b, a = 1) => `rgba(${r * k | 0},${g * k | 0},${b * k | 0},${a})`;
+      const k = lit ? 1 : .2, col = (r, g, b, a = 1) => `rgba(${r * k | 0},${g * k | 0},${b * k | 0},${a})`;
       rect(c, 0, 0, W, 90, lit ? col(90, 80, 70) : 'rgb(8,10,16)');
       for (let i = 0; i < 5; i++) { rect(c, 20 + i * 62, 20, 36, 40, 'rgb(10,14,24)');
         for (let j = 0; j < 9; j++) line(c, 'rgba(140,160,200,.35)', .7, 24 + i * 62 + j * 4, 22, 22 + i * 62 + j * 4, 58); }
@@ -278,6 +278,7 @@ const CCTV = (() => {
       for (let i = 0; i < 9; i++) { const x = 20 + i * 35, y = 120 + (i % 3) * 18;
         rect(c, x - 14, y + 4, 30, 10, lit ? col(70, 90, 130) : 'rgb(14,16,22)');
         ell(c, x, y - 6, 4, 5, lit ? col(60, 45, 35) : 'rgb(4,4,6)'); poly(c, lit ? col(80, 70, 90) : 'rgb(5,5,8)', x - 7, y + 6, x + 7, y + 6, x + 5, y - 2, x - 5, y - 2); }
+      if (!lit) { glow(c, 268, 72, 36, .3, '60,200,110'); rect(c, 248, 66, 40, 13, 'rgb(30,130,65)'); text(c, '비상구', 268, 73, 12, 'rgb(200,255,215)'); }
       if (lit) [50, 160, 270].forEach(x => { rect(c, x - 14, 4, 28, 3, 'rgb(255,240,200)'); glow(c, x, 60, 120, .35, '255,220,160'); });
       seed('S'); const d = c.getImageData(0, 0, W, H), p = d.data;
       for (let i = 0; i < p.length; i += 4) { const n = (rnd() - .5) * 14; p[i] += n; p[i + 1] += n; p[i + 2] += n; }

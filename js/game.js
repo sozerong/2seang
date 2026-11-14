@@ -38,7 +38,7 @@ const SFX = (() => {
   return {
     init,
     toggle(){ on = !on; if (master) master.gain.value = on ? 1 : 0; return on; },
-    hum(){ if (!ctx) return; const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = 55; g.gain.value = .018; o.connect(g).connect(master); o.start();
+    hum(){ if (!ctx || this.humming) return; this.humming = true; const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = 55; g.gain.value = .018; o.connect(g).connect(master); o.start();
       const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), ng = ctx.createGain(); n.buffer = noiseBuf(2); n.loop = true; f.type = 'lowpass'; f.frequency.value = 400; ng.gain.value = .02; n.connect(f).connect(ng).connect(master); n.start(); },
     static(dur = .25, vol = .07){ if (!ctx) return; const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(), t = ctx.currentTime;
       n.buffer = noiseBuf(dur); f.type = 'highpass'; f.frequency.value = 1500; g.gain.setValueAtTime(vol, t); g.gain.linearRampToValueAtTime(0, t + dur); n.connect(f).connect(g).connect(master); n.start(); },
@@ -65,9 +65,12 @@ const BRIEF = `한빛시가 대피소용 비상전원장치 200대 구매를 요
 "한빛시 검토자료 <b>EV-2417</b>이 업체로 새어 나갔다"는 신고가 들어왔고,
 한빛시가 그날 밤 CCTV와 관련 문서를 보내왔다.
 
-계약 승인 회의는 <b>09:00</b>. 남은 시간은 <b>10분</b>.
+계약 승인 회의는 <b>09:00</b>. 남은 시간은 <b>20분</b>.
 서류와 CCTV 장면을 짝지어 의심 정황 3건을 보고하라.
-정상 업무를 의심하면 30초를 잃는다.`;
+정상 업무를 의심하면 30초를 잃는다.
+
+<small>조작: CCTV 화면을 눌러 크게 보고 [캡처] / 서류는 끌어서 아래 패드로
+패드에서 캡처 1장 + 서류 1장을 골라 빨간 버튼</small>`;
 
 let typer;
 function typeOut(el, str, speed, done){
@@ -94,16 +97,20 @@ function timeCard(){
 // ---------- 게임 상태 ----------
 let S, timer;
 function startGame(){
-  S = {t:600, clues:{}, cctv:[], docs:[], selC:null, selD:null, unlocked:new Set(), wrong:{},
+  S = {t:TOTAL, clues:{}, cctv:[], docs:[], selC:null, selD:null, unlocked:new Set(), wrong:{},
        time:TIMES[0], cam:null, zoom:false, view:{type:'desktop'}, hist:[], over:false};
   show('game'); renderAll();
   clearInterval(timer); timer = setInterval(tick, 1000);
 }
 const p2 = n => String(n).padStart(2, '0');
+const TOTAL = 20 * 60; // 제한 시간(초). 회의는 09:00, 시작 시각은 거기서 역산
 function tick(){
   if (S.over) return;
   S.t--; renderClock();
   if (S.t <= 30 && S.t > 0) SFX.tick();
+  if (S.t === 300) { SFX.deny(); msg('08:55 AM', '회의까지 5분 남았습니다.', 'bad', 2400); }
+  if (S.t === 60) { SFX.deny(); msg('08:59 AM', '회의까지 1분.', 'bad', 2400); }
+  document.querySelectorAll('.feed .ts').forEach(e => { const n = (+e.dataset.s + 1) % 60; e.dataset.s = n; e.textContent = `D-1 ${S.time}:${p2(n)}`; });
   if (S.t <= 0) ending('timeout');
 }
 function penalty(){
@@ -114,8 +121,8 @@ function penalty(){
   if (S.t <= 0) ending('timeout');
 }
 function renderClock(){
-  const s = 50 * 60 + (600 - S.t);
-  $('clock').textContent = `${p2(8 + Math.floor(s / 3600))}:${p2(Math.floor(s / 60) % 60)} AM`;
+  const s = 9 * 3600 - S.t; // 09:00까지 남은 초 → 현재 시각
+  $('clock').textContent = `${p2(Math.floor(s / 3600))}:${p2(Math.floor(s / 60) % 60)} AM`;
   $('remain').textContent = `남은 시간 ${p2(Math.floor(S.t / 60))}:${p2(S.t % 60)}`;
   $('remain').classList.toggle('low', S.t <= 60); $('clock').classList.toggle('low', S.t <= 60);
 }
@@ -173,7 +180,7 @@ function renderLeft(){
   } else if (v.type === 'folder'){
     const f = FOLDERS.find(f => f.id === v.id);
     bar.innerHTML = `${bk} C:\\한빛시 제출자료\\${f.id}_${f.name}`;
-    body.innerHTML = `<div class="list">${f.docs.map(d => `<div class="file" draggable="${!isLocked(d)}" data-d="${d.id}"><img src="${ICON.file}">${d.name}<span class="tag ${isLocked(d) ? 'lock' : ''}">${isLocked(d) ? '[잠김]' : '끌어서 패드로'}</span></div>`).join('')}</div>`;
+    body.innerHTML = `<div class="list">${f.docs.map(d => `<div class="file" draggable="${!isLocked(d)}" data-d="${d.id}"><img src="${ICON.file}">${d.name}<span class="tag ${isLocked(d) ? 'lock' : ''}">${isLocked(d) ? '[잠김]' : S.docs.includes(d.id) ? '[패드에 있음]' : '끌어서 패드로'}</span></div>`).join('')}</div>`;
     body.querySelectorAll('[data-d]').forEach(e => {
       e.onclick = () => openDoc(DOCS[e.dataset.d]);
       e.ondragstart = ev => ev.dataTransfer.setData('text/plain', e.dataset.d);
@@ -194,14 +201,14 @@ function feed(cam, big){
   const k = `${cam}-${S.time}`;
   const zoom = big && S.zoom ? `<img class="zoomImg" src="${CCTV.zoom(k)}"><span class="zoomTag">확대</span>` : '';
   return `<div class="feed ${big ? 'big' : ''}" data-c="${cam}"><img src="${CCTV.scene(cam, S.time)}">${zoom}<div class="noise"></div>
-    <span class="lbl">CAM ${cam}</span><span class="ts">D-1 ${S.time}:${secs(cam)}</span><span class="loc">${CAMS[cam]}</span><span class="rec">REC</span></div>`;
+    <span class="lbl">CAM ${cam}</span><span class="ts" data-s="${+secs(cam)}">D-1 ${S.time}:${secs(cam)}</span><span class="loc">${CAMS[cam]}</span><span class="rec">REC</span></div>`;
 }
 function staticFx(){ const r = $('right'); SFX.static(); r.classList.add('static'); setTimeout(() => r.classList.remove('static'), 220); }
 function renderRight(){
   const tape = `<div class="tape">${TIMES.map(t => `<button data-t="${t}" class="${t === S.time ? 'on' : ''}">${t}</button>`).join('')}</div>`;
   const body = $('right');
   if (!S.cam){
-    $('rbar').innerHTML = `녹화 ◀◀ ${tape}`;
+    $('rbar').innerHTML = `녹화 ◀◀ ${tape}<span class="sp"></span><span class="tip">화면을 눌러 크게</span>`;
     body.innerHTML = `<div class="grid4">${Object.keys(CAMS).map(c => feed(c, false)).join('')}</div>`;
     body.querySelectorAll('[data-c]').forEach(e => e.onclick = () => { S.cam = e.dataset.c; S.zoom = false; staticFx(); renderRight(); });
   } else {
@@ -229,13 +236,13 @@ function addDoc(id){
   if (!d) return;
   if (isLocked(d)){ SFX.deny(); return msg('', '잠긴 서류는 비밀번호를 풀어야 담을 수 있습니다.', 'bad', 1800); }
   if (S.docs.includes(id)) return msg('', '이미 패드에 있는 서류입니다.', '', 1400);
-  SFX.click(); S.docs.push(id); renderPad();
+  SFX.click(); S.docs.push(id); renderPad(); if (S.view.type === 'folder') renderLeft();
 }
 const solved = () => Object.entries(PAIRS).filter(([, v]) => S.clues[v.c]).map(([k]) => k.split('|'));
 function renderPad(){
   const sv = solved(), dC = sv.map(x => x[0]), dD = sv.map(x => x[1]);
   $('padCctv').innerHTML = S.cctv.length ? S.cctv.map(k => `<div class="card cc ${S.selC === k ? 'sel' : ''} ${dC.includes(k) ? 'done' : ''}" data-k="${k}">
-      <img src="${CCTV.scene(...k.split('-'))}"><span>CAM ${k.replace('-', ' · ')}</span><span class="x" data-x="1">×</span></div>`).join('')
+      <img src="${CCTV.scene(...k.split('-'))}"><span>CAM${k.replace('-', ' ')}</span><span class="x" data-x="1">×</span></div>`).join('')
     : '<span class="empty">CCTV 화면을 크게 열고 [캡처]</span>';
   $('padDoc').innerHTML = S.docs.length ? S.docs.map(id => `<div class="card dc ${S.selD === id ? 'sel' : ''} ${dD.includes(id) ? 'done' : ''}" data-k="${id}">
       ${DOCS[id].name}<span class="x" data-x="1">×</span></div>`).join('')
@@ -244,7 +251,7 @@ function renderPad(){
     const k = e.dataset.k; SFX.click();
     if (ev.target.dataset.x){ S[list] = S[list].filter(x => x !== k); if (S[selKey] === k) S[selKey] = null; }
     else S[selKey] = S[selKey] === k ? null : k;
-    renderPad();
+    renderPad(); if (list === 'docs' && S.view.type === 'folder') renderLeft();
   });
   wire($('padCctv'), 'cctv', 'selC'); wire($('padDoc'), 'docs', 'selD');
   $('accuseBtn').disabled = !(S.selC && S.selD);
@@ -254,7 +261,9 @@ function accuse(){
   const k = `${S.selC}|${S.selD}`, p = PAIRS[k];
   if (p){
     if (S.clues[p.c]) msg('', '이미 해결한 단서입니다.', '', 1400);
-    else { S.clues[p.c] = true; SFX.good(); msg(`단서 ${p.c} 확보`, p.m, 'ok', 3200); }
+    else { S.clues[p.c] = true; SFX.good();
+      if (Object.keys(S.clues).length === 3) msg(`단서 ${p.c} 확보`, p.m + '<br><br>모든 단서를 찾았습니다. 오른쪽 위 [조사 보고서]를 작성하세요.', 'ok', 4500);
+      else msg(`단서 ${p.c} 확보`, p.m, 'ok', 3200); }
   } else if (TRAPS[k]){ msg('판단 오류 −30초', TRAPS[k], 'bad', 3200); penalty(); }
   else { SFX.deny(); msg('', '사건과의 관련성이 부족합니다.', '', 1800); }
   S.selC = S.selD = null;
