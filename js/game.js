@@ -18,11 +18,12 @@ const BMP = {
   pc:['................','.aaaaaaaaaaaaaa.','.abbbbbbbbbbbba.','.abccccccccccba.','.abccccccccccba.','.abccccccccccba.','.abccccccccccba.','.abccccccccccba.','.abbbbbbbbbbbba.','.aaaaaaaaaaaaaa.','......abba......','......abba......','...aaaaaaaaaa...','...abbbbbbbba...','...aaaaaaaaaa...','................'],
   trash:['................','.....aaaaaa.....','..aaaaaaaaaaaa..','..abbbbbbbbbba..','..aaaaaaaaaaaa..','...abcbcbcbca...','...abcbcbcbca...','...abcbcbcbca...','...abcbcbcbca...','...abcbcbcbca...','...abcbcbcbca...','...abcbcbcbca...','...abcbcbcbca...','...aaaaaaaaaa...','................','................'],
   globe:['................','.....aaaaaa.....','...aabcbbcbaa...','..abbcbbbbcbba..','..aaaaaaaaaaaa..','.abbcbbbbbbcbba.','.abbcbbbbbbcbba.','.aaaaaaaaaaaaaa.','.abbcbbbbbbcbba.','.abbcbbbbbbcbba.','..aaaaaaaaaaaa..','..abbcbbbbcbba..','...aabcbbcbaa...','.....aaaaaa.....','................','................'],
+  chat:['................','................','.aaaaaaaaaaaaa..','.abbbbbbbbbbbba.','.abccccccccccba.','.abcaaaacaaacba.','.abccccccccccba.','.abcaaaaaaacbba.','.abccccccccccba.','.abbbbbbbbbbbba.','.aaaaabbaaaaaa..','.....abba.......','.....aba........','.....aa.........','................','................'],
   gear:['................','.......aa.......','...aa.abba.aa...','...abaabbaaba...','....abbbbbba....','..aabbbaabbbaa..','.abbbba..abbbba.','.abbbba..abbbba.','..aabbbaabbbaa..','....abbbbbba....','...abaabbaaba...','...aa.abba.aa...','.......aa.......','................','................','................'],
 };
 const PAL = { folder:{a:'#1a1608',b:'#8c7836',c:'#b9a158'}, lock:{a:'#1a1608',b:'#6b5c2a',c:'#8c7836',d:'#b8392c'},
   file:{a:'#16170f',b:'#7d8170',c:'#b9bca8'}, pc:{a:'#111',b:'#6b6e62',c:'#32493a'}, trash:{a:'#111',b:'#6b6e62',c:'#3d3f37'},
-  globe:{a:'#111',b:'#3f5a63',c:'#7aa0a8'}, gear:{a:'#111',b:'#76796c',c:'#999'} };
+  globe:{a:'#111',b:'#3f5a63',c:'#7aa0a8'}, gear:{a:'#111',b:'#76796c',c:'#999'}, chat:{a:'#111',b:'#6f8a52',c:'#c9d6a8'} };
 const ICON = {};
 for (const k in BMP){ const c = document.createElement('canvas'); c.width = c.height = 16; const x = c.getContext('2d');
   BMP[k].forEach((row, y) => [...row].forEach((ch, i) => { if (PAL[k][ch]){ x.fillStyle = PAL[k][ch]; x.fillRect(i, y, 1, 1); } }));
@@ -56,7 +57,9 @@ function show(id){ document.querySelectorAll('.screen').forEach(s => s.classList
 
 // 타이틀
 $('mSound').onclick = () => { $('mSound').textContent = '소리: ' + (SFX.toggle() ? '켜짐' : '꺼짐'); };
-$('mStart').onclick = () => { SFX.init(); SFX.hum(); SFX.click(); briefing(); };
+let MODE = 'hard';
+$('mEasy').onclick = () => { MODE = 'easy'; SFX.init(); SFX.hum(); SFX.click(); briefing(); };
+$('mHard').onclick = () => { MODE = 'hard'; SFX.init(); SFX.hum(); SFX.click(); briefing(); };
 
 const BRIEF = `한빛시가 대피소용 비상전원장치 200대 구매를 요청했다.
 입찰 업체는 윤슬파워, 영래에너지, 주혁볼트.
@@ -65,11 +68,11 @@ const BRIEF = `한빛시가 대피소용 비상전원장치 200대 구매를 요
 "한빛시 검토자료 <b>EV-2417</b>이 업체로 새어 나갔다"는 신고가 들어왔고,
 한빛시가 그날 밤 CCTV와 관련 문서를 보내왔다.
 
-계약 승인 회의는 <b>09:00</b>. 남은 시간은 <b>20분</b>.
+계약 승인 회의는 <b>09:00</b>. 남은 시간은 <b>10분</b>.
 서류와 CCTV 장면을 짝지어 의심 정황 3건을 보고하라.
 정상 업무를 의심하면 30초가 차감된다.
 신고접수 폴더부터 확인해보자.
-
+%EASY%
 <small>조작: CCTV 화면을 눌러 크게 보고 [캡처] / 서류는 끌어서 아래 패드로
 패드에서 캡처 1장 + 서류 1장을 골라 빨간 버튼</small>`;
 
@@ -86,7 +89,8 @@ function typeOut(el, str, speed, done){
 }
 function briefing(){
   show('brief'); $('briefGo').classList.add('hidden');
-  const skip = typeOut($('briefText'), BRIEF, 22, () => $('briefGo').classList.remove('hidden'));
+  const text = BRIEF.replace('%EASY%', MODE === 'easy' ? '막히면 바탕화면 <b>[메신저]</b>로 팀장에게 힌트를 요청할 수 있다.\n' : '');
+  const skip = typeOut($('briefText'), text, 22, () => $('briefGo').classList.remove('hidden'));
   $('brief').onclick = e => { if (e.target.id !== 'briefGo') skip(); };
   $('briefGo').onclick = () => { SFX.click(); timeCard(); };
 }
@@ -100,12 +104,13 @@ function timeCard(){
 let S, timer;
 function startGame(){
   S = {t:TOTAL, clues:{}, cctv:[], docs:[], selC:null, selD:null, unlocked:new Set(), wrong:{},
-       time:TIMES[0], cam:null, zoom:false, view:{type:'desktop'}, hist:[], over:false};
+       time:TIMES[0], cam:null, zoom:false, view:{type:'desktop'}, hist:[], over:false,
+       mode:MODE, given:[], hintAt:TOTAL, chat:[{text:'급하게 맡겨서 미안하네. 막히면 [힌트 요청]을 누르게.<br>힌트를 하나 주고 나면, 다음 힌트까지 2분은 기다려야 하네.'}]};
   show('game'); renderAll();
   clearInterval(timer); timer = setInterval(tick, 1000);
 }
 const p2 = n => String(n).padStart(2, '0');
-const TOTAL = 20 * 60; // 제한 시간(초). 회의는 09:00, 시작 시각은 거기서 역산
+const TOTAL = 10 * 60; // 제한 시간(초). 회의는 09:00, 시작 시각은 거기서 역산
 function tick(){
   if (S.over) return;
   S.t--; renderClock();
@@ -113,6 +118,7 @@ function tick(){
   if (S.t === 300) { SFX.deny(); msg('08:55 AM', '회의까지 5분 남았습니다.', 'bad', 2400); }
   if (S.t === 60) { SFX.deny(); msg('08:59 AM', '회의까지 1분.', 'bad', 2400); }
   document.querySelectorAll('.feed .ts').forEach(e => { const n = (+e.dataset.s + 1) % 60; e.dataset.s = n; e.textContent = `D-1 ${S.time}:${p2(n)}`; });
+  if (S.mode === 'easy') { if (S.t === S.hintAt && nextHint()) { SFX.good(); msg('', '메신저: 다음 힌트를 요청할 수 있네.', '', 2000); } hintBtn(); }
   if (S.t <= 0) ending('timeout');
 }
 function penalty(){
@@ -172,9 +178,14 @@ function renderLeft(){
     bar.innerHTML = 'C:\\바탕화면';
     const deco = [['globe','크롬'],['pc','내 PC'],['trash','휴지통'],['gear','제어판']];
     body.innerHTML = `<div class="icons">${deco.map(([i, n]) => `<div class="icon deco"><img src="${ICON[i]}">${n}</div>`).join('')}
+      <div class="icon" id="msgr"><img src="${ICON.chat}">메신저${S.mode === 'hard' ? '<small class="lk">잠김</small>' : ''}</div>
       <div class="icon" id="root"><img src="${ICON.folder}">한빛시 제출자료</div></div>`;
+    $('msgr').onclick = () => S.mode === 'hard' ? (SFX.deny(), msg('', '어려움 모드에서는 메신저가 잠겨 있습니다.', '', 1600)) : go({type:'chat'});
     body.querySelectorAll('.deco').forEach(e => e.onclick = () => { SFX.deny(); msg('', '조사와 관련 없는 항목입니다.', '', 1400); });
     $('root').onclick = () => go({type:'root'});
+  } else if (v.type === 'chat'){
+    bar.innerHTML = `${bk} 메신저 · 조사팀장`;
+    renderChat(body);
   } else if (v.type === 'root'){
     bar.innerHTML = `${bk} C:\\한빛시 제출자료`;
     body.innerHTML = `<div class="icons">${FOLDERS.map(f => `<div class="icon" data-f="${f.id}"><img src="${fLocked(f) ? ICON.lock : ICON.folder}">${f.id}_${f.name}</div>`).join('')}</div>`;
@@ -271,8 +282,36 @@ function accuse(){
   S.selC = S.selD = null;
   renderPad(); renderClues();
 }
+// ---------- 힌트 메신저 (쉬움 모드) ----------
+const HINTS = {
+  1: '자료반출승인대장 서류의 비밀번호는 업무인수인계_메모.txt 서류를 확인해보면 된다네. 서류에는 반출 기록이 없다고 하는데 반출이 되었으니, 반출이 의심되는 CCTV 화면을 찾아서 캡처 후 서류와 함께 의심 정황을 보고해보게.',
+  2: '03_평가자료_EV-2417 폴더의 비밀번호는 07_보안문서_열람기록 폴더를 찾아보면 힌트가 있네.',
+  3: '21시 58분에 외부인이 출입한 흔적이 있네. CCTV 화면에 힌트가 될만한 단서가 있지 않을까 싶네만.',
+};
+// 아직 못 푼 단서 중 힌트를 안 준 가장 앞 번호
+const nextHint = () => [1, 2, 3].find(n => !S.clues[n] && !S.given.includes(n));
+function renderChat(body){
+  body.innerHTML = `<div class="chat" id="chatLog">${S.chat.map(m => `<div class="bub ${m.me ? 'me' : ''}"><span>${m.me ? '나' : '조사팀장'}</span>${m.text}</div>`).join('')}</div>
+    <div class="chatBar"><button class="btn hot" id="askHint"></button></div>`;
+  $('chatLog').scrollTop = 1e6; hintBtn();
+  $('askHint').onclick = askHint;
+}
+function hintBtn(){
+  const b = $('askHint'); if (!b) return;
+  const n = nextHint(), wait = S.t - S.hintAt;
+  b.disabled = !n || wait > 0;
+  b.textContent = !n ? '더 줄 힌트가 없네' : wait > 0 ? `다음 힌트까지 ${Math.floor(wait / 60)}:${p2(wait % 60)}` : '힌트 요청';
+}
+function askHint(){
+  const n = nextHint(); if (!n || S.t > S.hintAt) return;
+  S.given.push(n); S.hintAt = S.t - 120; SFX.click();
+  S.chat.push({me:true, text:'팀장님, 힌트 부탁드립니다.'}); renderChat($('left'));
+  setTimeout(() => { S.chat.push({text:`<b>단서 ${n} 힌트</b><br>${HINTS[n]}`}); SFX.good(); if (S.view.type === 'chat') renderChat($('left')); }, 700);
+}
+
 function renderClues(){
-  $('clues').innerHTML = [1, 2, 3].map(i => `<div class="clue ${S.clues[i] ? 'on' : ''}">단서 ${i} ${S.clues[i] ? CLUES[i] : '? ? ?'}</div>`).join('');
+  $('clues').innerHTML = [1, 2, 3].map(i => `<div class="clue ${S.clues[i] ? 'on' : ''}">단서 ${i} ${S.clues[i] ? CLUES[i] : '? ? ?'}</div>`).join('')
+    + `<div class="modeTag">${S.mode === 'easy' ? '쉬움 모드' : '어려움 모드'}</div>`;
   $('reportBtn').disabled = Object.keys(S.clues).length < 3;
 }
 
@@ -285,63 +324,65 @@ function report(){
   <button class="choice" data-c="A">예정대로 계약을 승인한다</button>
   <button class="choice" data-c="B">계약을 보류하고 재심사하며, 관계 기관에 알린다</button>
   <button class="choice" data-c="C">관련자를 즉시 처벌한다</button>
+  <div class="notice hidden" id="rNote"><b>처벌은 조사관의 권한이 아닙니다.</b><br>조사관은 의심 정황을 확인하고 조치를 건의할 뿐,<br>처벌은 감사와 수사, 정해진 절차를 거쳐 결정됩니다.<br><span class="pen">−30초</span></div>
   <div class="row"><button class="btn" id="rC">닫기</button></div>`, 'form');
   $('box').querySelectorAll('[data-c]').forEach(b => b.onclick = () => {
     const c = b.dataset.c;
     if (c === 'A'){ closeModal(); ending('fail'); }
     else if (c === 'B'){ closeModal(); ending('success'); }
-    else { msg('권한 없음 −30초', '조사관은 조치를 건의할 수 있을 뿐, 처벌을 직접 결정할 수 없습니다.', 'bad', 3200); penalty(); }
+    else { $('rNote').classList.remove('hidden'); penalty(); }
   });
   $('rC').onclick = closeModal;
 }
 function ending(type){
   if (S.over) return;
   S.over = true; clearInterval(timer); closeModal();
-  const E = {
-    fail:['03:00 AM', '계약은 예정대로 승인되었다.\n몇 주 뒤 집중호우. 정전 5시간 30분째.\n대피소의 조명이 하나둘 꺼지기 시작한다.'],
-    timeout:['09:00 AM', '조사를 끝내지 못한 채 회의가 시작되었고, 계약은 그대로 승인되었다.\n몇 주 뒤 새벽 3시, 대피소의 조명이 꺼진다.'],
-  }[type];
   show('ending'); SFX.static(.6, .1);
-  const img = $('endImg'), rain = $('rain'), again = $('again');
-  again.classList.add('hidden'); $('endWin').classList.add('hidden'); $('endBig').textContent = ''; $('endBody').textContent = '';
-  $('ending').querySelector('.endText').classList.toggle('long', type === 'success');
-  $('ending').onclick = null;
-  img.src = CCTV.shelter(true); img.style.opacity = ''; rain.classList.remove('hidden');
-  if (type === 'success') return successEnding(img, rain, again);
-  again.textContent = '다시 조사하기';
-  const writeText = () => { $('endBig').textContent = E[0];
-    typeOut($('endBody'), E[1].replace(/\n/g, '<br>'), 35, () => again.classList.remove('hidden')); };
-  // 실패: 조명이 깜빡이다 꺼진다
-  const seq = [500, 120, 90, 300, 80, 60, 700];
-  let i = 0, t = 600;
-  seq.forEach(d => { t += d; setTimeout(() => { i++; img.src = CCTV.shelter(i % 2 === 0); SFX.static(.05, .05); }, t); });
-  setTimeout(() => { img.src = CCTV.shelter(false); SFX.buzz(); writeText(); }, t + 400);
-}
-// 성공 엔딩: 문단을 하나씩 찍고, 폭우 문단에서 불 켜진 대피소가 드러난다. 화면을 누르면 지금 문단을 바로 다 보여 준다.
-const SUCCESS = [
-  '계약은 보류되었고, 재심사가 시작되었다.\n사건은 감사부서와 수사기관으로 넘어갔다.',
-  '재심사 결과, 주혁볼트의 낙찰 예정은 취소되었다.\n모든 기준을 충족한 윤슬파워가 새로 선정되었다.',
-  '주혁볼트는 부정당업자로 지정되어\n공공입찰 참가가 제한되었다.\n김현우는 입찰방해 혐의로 수사를 받게 되었다.',
-  '박도현은 직위에서 물러나 징계와 수사를 받게 되었다.',
-  '대피소마다 기준에 맞는 비상전원장치 200대가 놓였다.',
-  '몇 주 뒤, 기록적인 폭우로 도시 전체가 정전되었다.\n9시간이 지나도, 대피소의 불은 꺼지지 않았다.',
-  '당신의 판단은 공정한 계약을 지켰고,\n재난 속 시민들의 불편을 최소화했습니다.',
-];
-function successEnding(img, rain, again){
-  img.style.opacity = 0; rain.classList.add('hidden'); SFX.good();
-  $('endBig').textContent = '계약 보류';
+  const E = ENDS[type], img = $('endImg'), rain = $('rain'), again = $('again'), win = $('endWin');
+  again.classList.add('hidden'); win.classList.add('hidden'); $('endBody').textContent = '';
+  $('ending').querySelector('.endText').className = 'endText long ' + (type === 'success' ? 'ok' : 'bad');
+  $('endBig').textContent = E.big; win.textContent = E.result;
+  img.src = CCTV.shelter(true); img.style.opacity = 0; rain.classList.add('hidden');
+  if (type === 'success') SFX.good(); else SFX.buzz();
+  // 문단을 하나씩 찍는다. 폭우 문단(cue)에서 대피소 화면이 드러나고, 실패면 조명이 깜빡이다 꺼진다.
   let i = 0, skip;
   const next = () => {
-    if (i >= SUCCESS.length){ $('endWin').classList.remove('hidden'); SFX.good();
-      again.textContent = '게임 끝내기'; setTimeout(() => again.classList.remove('hidden'), 900); return; }
-    if (i === 5){ img.style.opacity = ''; rain.classList.remove('hidden'); }   // 폭우 문단: 불 켜진 대피소
-    const p = document.createElement('p'); if (i === SUCCESS.length - 1) p.className = 'verdict';
+    if (i >= E.paras.length){ win.classList.remove('hidden'); type === 'success' ? SFX.good() : SFX.deny();
+      again.textContent = E.btn; setTimeout(() => again.classList.remove('hidden'), 900); return; }
+    if (i === E.cue){ img.style.opacity = ''; rain.classList.remove('hidden'); if (type !== 'success') lightsOut(img); }
+    const p = document.createElement('p'); if (i === E.paras.length - 1) p.className = 'verdict';
     $('endBody').appendChild(p);
-    skip = typeOut(p, SUCCESS[i++].replace(/\n/g, '<br>'), 28, () => setTimeout(next, 500));
+    skip = typeOut(p, E.paras[i++].replace(/\n/g, '<br>'), 28, () => setTimeout(next, 500));
   };
   setTimeout(next, 900);
   $('ending').onclick = e => { if (e.target !== again && skip) skip(); };
 }
+function lightsOut(img){
+  let i = 0, t = 1600;
+  [500, 120, 90, 300, 80, 60, 700].forEach(d => { t += d; setTimeout(() => { i++; img.src = CCTV.shelter(i % 2 === 0); SFX.static(.05, .05); }, t); });
+  setTimeout(() => { img.src = CCTV.shelter(false); SFX.buzz(); }, t + 400);
+}
+const STORM_DARK = '몇 주 뒤, 기록적인 폭우로 도시 전체가 정전되었다.\n5시간 30분 뒤, 새벽 3시. 대피소의 조명이 하나둘 꺼졌다.\n휴대전화 충전도 멈췄고,\n시민들은 어둠 속에서 공포에 떨며 아침을 기다려야 했다.';
+const ENDS = {
+  success: { big: '계약 보류', result: '성공!', btn: '게임 끝내기', cue: 5, paras: [
+    '계약은 보류되었고, 재심사가 시작되었다.\n사건은 감사부서와 수사기관으로 넘어갔다.',
+    '재심사 결과, 주혁볼트의 낙찰 예정은 취소되었다.\n모든 기준을 충족한 윤슬파워가 새로 선정되었다.',
+    '주혁볼트는 부정당업자로 지정되어\n공공입찰 참가가 제한되었다.\n김현우는 입찰방해 혐의로 수사를 받게 되었다.',
+    '박도현은 직위에서 물러나 징계와 수사를 받게 되었다.',
+    '대피소마다 기준에 맞는 비상전원장치 200대가 놓였다.',
+    '몇 주 뒤, 기록적인 폭우로 도시 전체가 정전되었다.\n9시간이 지나도, 대피소의 불은 꺼지지 않았다.',
+    '당신의 판단은 공정한 계약을 지켰고,\n재난 속 시민들의 불편을 최소화했습니다.'] },
+  fail: { big: '계약 승인', result: '실패', btn: '다시 조사하기', cue: 2, paras: [
+    '증거는 모두 찾았다. 그러나 계약은 예정대로 승인되었다.',
+    '대피소마다 주혁볼트의 비상전원장치 200대가 놓였다.',
+    STORM_DARK,
+    '증거를 외면하여 불공정 조달 사건이 발생했고,\n그로 인해 시민들이 불편을 겪었습니다.'] },
+  timeout: { big: '09:00 AM', result: '실패', btn: '다시 조사하기', cue: 2, paras: [
+    '조사를 끝내지 못한 채 회의가 시작되었고,\n계약은 그대로 승인되었다.',
+    '대피소마다 주혁볼트의 비상전원장치 200대가 놓였다.',
+    STORM_DARK,
+    '공정하지 않은 계약으로 인해,\n시민들이 불편을 겪었습니다.'] },
+};
 $('again').onclick = () => { SFX.click(); show('title'); };
 
 // ---------- 연결 ----------
