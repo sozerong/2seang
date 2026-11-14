@@ -74,13 +74,14 @@ const BRIEF = `한빛시가 대피소용 비상전원장치 200대 구매를 요
 
 let typer;
 function typeOut(el, str, speed, done){
-  clearInterval(typer); let i = 0;
+  clearInterval(typer); let i = 0, fin = false;
+  const end = () => { if (fin) return; fin = true; clearInterval(typer); el.innerHTML = str; done && done(); };
   typer = setInterval(() => {
     if (str[i] === '<') i = str.indexOf('>', i) + 1; else i++;
     el.innerHTML = str.slice(0, i); if (i % 3 === 0) SFX.tick();
-    if (i >= str.length){ clearInterval(typer); done && done(); }
+    if (i >= str.length) end();
   }, speed);
-  return () => { clearInterval(typer); el.innerHTML = str; done && done(); };
+  return end;
 }
 function briefing(){
   show('brief'); $('briefGo').classList.add('hidden');
@@ -296,22 +297,49 @@ function ending(type){
   if (S.over) return;
   S.over = true; clearInterval(timer); closeModal();
   const E = {
-    success:['계약 보류', '계약은 보류되고 재심사가 시작되었다. 사건은 감사부서와 수사기관으로 넘어갔다.\n몇 주 뒤, 기록적인 폭우로 도시 전체가 정전되었다.\n9시간이 지나도, 대피소의 불은 꺼지지 않았다.'],
     fail:['03:00 AM', '계약은 예정대로 승인되었다.\n몇 주 뒤 집중호우. 정전 5시간 30분째.\n대피소의 조명이 하나둘 꺼지기 시작한다.'],
     timeout:['09:00 AM', '조사를 끝내지 못한 채 회의가 시작되었고, 계약은 그대로 승인되었다.\n몇 주 뒤 새벽 3시, 대피소의 조명이 꺼진다.'],
   }[type];
   show('ending'); SFX.static(.6, .1);
-  $('again').classList.add('hidden'); $('endBig').textContent = ''; $('endBody').textContent = '';
-  const img = $('endImg'), rain = $('rain');
-  img.src = CCTV.shelter(true); rain.classList.remove('hidden');
+  const img = $('endImg'), rain = $('rain'), again = $('again');
+  again.classList.add('hidden'); $('endWin').classList.add('hidden'); $('endBig').textContent = ''; $('endBody').textContent = '';
+  $('ending').querySelector('.endText').classList.toggle('long', type === 'success');
+  $('ending').onclick = null;
+  img.src = CCTV.shelter(true); img.style.opacity = ''; rain.classList.remove('hidden');
+  if (type === 'success') return successEnding(img, rain, again);
+  again.textContent = '다시 조사하기';
   const writeText = () => { $('endBig').textContent = E[0];
-    typeOut($('endBody'), E[1].replace(/\n/g, '<br>'), 35, () => $('again').classList.remove('hidden')); };
-  if (type === 'success'){ SFX.good(); setTimeout(writeText, 800); return; }
+    typeOut($('endBody'), E[1].replace(/\n/g, '<br>'), 35, () => again.classList.remove('hidden')); };
   // 실패: 조명이 깜빡이다 꺼진다
   const seq = [500, 120, 90, 300, 80, 60, 700];
   let i = 0, t = 600;
   seq.forEach(d => { t += d; setTimeout(() => { i++; img.src = CCTV.shelter(i % 2 === 0); SFX.static(.05, .05); }, t); });
   setTimeout(() => { img.src = CCTV.shelter(false); SFX.buzz(); writeText(); }, t + 400);
+}
+// 성공 엔딩: 문단을 하나씩 찍고, 폭우 문단에서 불 켜진 대피소가 드러난다. 화면을 누르면 지금 문단을 바로 다 보여 준다.
+const SUCCESS = [
+  '계약은 보류되었고, 재심사가 시작되었다.\n사건은 감사부서와 수사기관으로 넘어갔다.',
+  '재심사 결과, 주혁볼트의 낙찰 예정은 취소되었다.\n모든 기준을 충족한 윤슬파워가 새로 선정되었다.',
+  '주혁볼트는 부정당업자로 지정되어\n공공입찰 참가가 제한되었다.\n김현우는 입찰방해 혐의로 수사를 받게 되었다.',
+  '박도현은 직위에서 물러나 징계와 수사를 받게 되었다.',
+  '대피소마다 기준에 맞는 비상전원장치 200대가 놓였다.',
+  '몇 주 뒤, 기록적인 폭우로 도시 전체가 정전되었다.\n9시간이 지나도, 대피소의 불은 꺼지지 않았다.',
+  '당신의 판단은 공정한 계약을 지켰고,\n재난 속 시민들의 불편을 최소화했습니다.',
+];
+function successEnding(img, rain, again){
+  img.style.opacity = 0; rain.classList.add('hidden'); SFX.good();
+  $('endBig').textContent = '계약 보류';
+  let i = 0, skip;
+  const next = () => {
+    if (i >= SUCCESS.length){ $('endWin').classList.remove('hidden'); SFX.good();
+      again.textContent = '게임 끝내기'; setTimeout(() => again.classList.remove('hidden'), 900); return; }
+    if (i === 5){ img.style.opacity = ''; rain.classList.remove('hidden'); }   // 폭우 문단: 불 켜진 대피소
+    const p = document.createElement('p'); if (i === SUCCESS.length - 1) p.className = 'verdict';
+    $('endBody').appendChild(p);
+    skip = typeOut(p, SUCCESS[i++].replace(/\n/g, '<br>'), 28, () => setTimeout(next, 500));
+  };
+  setTimeout(next, 900);
+  $('ending').onclick = e => { if (e.target !== again && skip) skip(); };
 }
 $('again').onclick = () => { SFX.click(); show('title'); };
 
