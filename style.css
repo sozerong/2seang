@@ -38,7 +38,8 @@ img{image-rendering:pixelated}
 #brief{display:flex;align-items:center;justify-content:center;background:#000}
 .memo{width:640px;background:#cfc8b2;color:#1d1b16;padding:36px 44px;font-family:Galmuri14;font-size:15px;line-height:1.9;box-shadow:0 0 60px rgba(0,0,0,.9),inset 0 0 80px rgba(80,60,20,.35);transform:rotate(-.6deg)}
 .memoHead{font-family:Galmuri11B;font-size:24px;border-bottom:2px solid #1d1b16;padding-bottom:8px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:baseline}
-.memoHead span{font-family:Galmuri11;font-size:12px}
+.memoHead .from{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-family:Galmuri11;font-size:12px}
+.memoHead .from img{height:40px;image-rendering:auto}
 #briefText{min-height:300px;white-space:pre-wrap}
 #briefText b{color:#8a1c12}
 #briefText small{font-family:Galmuri11;font-size:12px;color:#4a4536}
