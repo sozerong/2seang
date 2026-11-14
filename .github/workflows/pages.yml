@@ -43,8 +43,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: 배포할 파일만 모으기
         run: mkdir _site && cp -r index.html style.css js fonts img _site/
+      # 재실행(Re-run)해도 이전 시도의 결과물과 이름이 겹치지 않게 시도 번호를 붙인다
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+          name: github-pages-${{ github.run_attempt }}
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
