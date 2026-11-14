@@ -212,7 +212,8 @@ function renderLeft(){
 const secs = cam => p2(parseInt(cam) * 13 % 60);
 function feed(cam, big){
   const k = `${cam}-${S.time}`;
-  const zoom = big && S.zoom ? `<img class="zoomImg" src="${CCTV.zoom(k)}"><span class="zoomTag">확대</span>` : '';
+  // 확대 화면이 따로 없는 장면은 화면 가운데를 크게 보여 준다 (어려움 모드에서 확대 버튼으로 중요 장면이 티 나지 않게)
+  const zoom = big && S.zoom ? `<img class="zoomImg${CCTV.hasZoom(k) ? '' : ' crop'}" src="${CCTV.zoom(k) || CCTV.scene(cam, S.time)}"><span class="zoomTag">확대</span>` : '';
   return `<div class="feed ${big ? 'big' : ''}" data-c="${cam}"><img src="${CCTV.scene(cam, S.time)}">${zoom}<div class="noise"></div>
     <span class="lbl">CAM ${cam}</span><span class="ts" data-s="${+secs(cam)}">D-1 ${S.time}:${secs(cam)}</span><span class="loc">${CAMS[cam]}</span><span class="rec">REC</span></div>`;
 }
@@ -227,7 +228,7 @@ function renderRight(){
   } else {
     const k = `${S.cam}-${S.time}`, z = CCTV.hasZoom(k);
     $('rbar').innerHTML = `<button class="btn" id="cBack">◀ 4분할</button> ${tape}<span class="sp"></span>
-      <button class="btn" id="cZoom" ${z ? '' : 'disabled'}>${S.zoom ? '확대 해제' : '확대'}</button><button class="btn hot" id="cCap">캡처</button>`;
+      <button class="btn" id="cZoom" ${z || S.mode === 'hard' ? '' : 'disabled'}>${S.zoom ? '확대 해제' : '확대'}</button><button class="btn hot" id="cCap">캡처</button>`;
     body.innerHTML = feed(S.cam, true) + `<div class="note2">${SCENE_NOTE[k] ? '관찰: ' + SCENE_NOTE[k] : ''}</div>`;
     $('cBack').onclick = () => { S.cam = null; S.zoom = false; staticFx(); renderRight(); };
     $('cZoom').onclick = () => { S.zoom = !S.zoom; SFX.click(); renderRight(); };
