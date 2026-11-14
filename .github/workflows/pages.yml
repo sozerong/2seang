@@ -1,0 +1,50 @@
+# main에 푸시하면: JS 문법 검사(CI) → 통과 시 GitHub Pages 배포(CD)
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: JS 문법 검사
+        run: for f in js/*.js; do node --check "$f"; done
+      - name: index.html이 참조하는 파일이 모두 있는지
+        run: |
+          grep -oE '(src|href)="[^"#:]+"' index.html | cut -d'"' -f2 | while read f; do
+            test -f "$f" || { echo "없음: $f"; exit 1; }
+          done
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: check
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 배포할 파일만 모으기
+        run: mkdir _site && cp -r index.html style.css js fonts img _site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
