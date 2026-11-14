@@ -70,7 +70,7 @@ const TUT = () => [
     <p>의심되는 서류는 아래 패드로 <b>끌어다 놓거나</b> [패드에 담기]를 누른다.</p>
     <div class="shot"><div class="file"><img src="${ICON.file}">예시_서류.pdf<span class="tag">끌어서 패드로</span></div><div class="file"><img src="${ICON.file}">잠긴_서류.xlsx<span class="tag lock">[잠김]</span></div></div>`],
   ['오른쪽 모니터: CCTV', `<p>위쪽 <b>시간 버튼</b>을 누르면 카메라 4대 화면이 그 시각으로 바뀐다.</p>
-    <p>화면을 <b>눌러서 크게</b> 본다. <b>[확대]</b>를 켜면 돋보기가 생긴다. 화면 위로 움직이며 작은 글씨까지 살펴보자.</p>
+    <p>화면을 <b>눌러서 크게</b> 본다. <b>[확대]</b>를 누르면 쉬움 모드에서는 중요한 부분이 크게 나오고, 어려움 모드에서는 돋보기가 생긴다. 돋보기를 화면 위로 움직이며 작은 글씨를 찾아보자.</p>
     <p>수상한 장면은 <b>[캡처]</b>해 패드에 담는다.</p>
     <div class="shot"><img src="${CCTV.scene('02', '18:20')}"><span>CAM 02 · 18:20 예시</span></div>`],
   ['증거수집 패드', `<p>패드에서 <b>CCTV 캡처 1장 + 서류 1장</b>을 골라 빨간 버튼을 누른다.</p>
@@ -246,8 +246,10 @@ function renderLeft(){
 const secs = cam => p2(parseInt(cam) * 13 % 60);
 function feed(cam, big){
   const k = `${cam}-${S.time}`;
-  const zoom = big && S.zoom;
-  return `<div class="feed ${big ? 'big' : ''} ${zoom ? 'loupeOn' : ''}" data-c="${cam}"><img src="${CCTV.scene(cam, S.time)}"><div class="noise"></div>${zoom ? '<div class="loupe"></div>' : ''}
+  // 쉬움: 따로 그린 클로즈업이 뜬다 / 어려움: 화면 위 돋보기로 직접 찾는다
+  const zoom = big && S.zoom, hard = S.mode === 'hard';
+  const over = !zoom ? '' : hard ? '<div class="loupe"></div>' : `<img class="zoomImg" src="${CCTV.zoom(k)}"><span class="zoomTag">확대</span>`;
+  return `<div class="feed ${big ? 'big' : ''} ${zoom && hard ? 'loupeOn' : ''}" data-c="${cam}"><img src="${CCTV.scene(cam, S.time)}"><div class="noise"></div>${over}
     <span class="lbl">CAM ${cam}</span><span class="ts" data-s="${+secs(cam)}">D-1 ${S.time}:${secs(cam)}</span><span class="loc">${CAMS[cam]}</span><span class="rec">REC</span></div>`;
 }
 // 확대경: 같은 장면의 고해상도 그림을 4배로 보여 주는 원형 돋보기. 마우스를 따라다닌다
@@ -273,9 +275,9 @@ function renderRight(){
   } else {
     const k = `${S.cam}-${S.time}`;
     $('rbar').innerHTML = `<button class="btn" id="cBack">◀ 4분할</button> ${tape}<span class="sp"></span>
-      <button class="btn ${S.zoom ? 'on' : ''}" id="cZoom">${S.zoom ? '확대 끄기' : '확대'}</button><button class="btn hot" id="cCap">캡처</button>`;
-    body.innerHTML = feed(S.cam, true) + `<div class="note2">${S.zoom ? '돋보기를 화면 위로 움직여 작은 글씨를 찾아보세요.' : SCENE_NOTE[k] ? '관찰: ' + SCENE_NOTE[k] : ''}</div>`;
-    if (S.zoom) loupe(body.querySelector('.feed'));
+      <button class="btn ${S.zoom ? 'on' : ''}" id="cZoom" ${S.mode === 'hard' || CCTV.hasZoom(k) ? '' : 'disabled'}>${S.zoom ? '확대 끄기' : '확대'}</button><button class="btn hot" id="cCap">캡처</button>`;
+    body.innerHTML = feed(S.cam, true) + `<div class="note2">${S.zoom && S.mode === 'hard' ? '돋보기를 화면 위로 움직여 작은 글씨를 찾아보세요.' : SCENE_NOTE[k] ? '관찰: ' + SCENE_NOTE[k] : ''}</div>`;
+    if (S.zoom && S.mode === 'hard') loupe(body.querySelector('.feed'));
     $('cBack').onclick = () => { S.cam = null; S.zoom = false; staticFx(); renderRight(); };
     $('cZoom').onclick = () => { S.zoom = !S.zoom; SFX.click(); renderRight(); };
     $('cCap').onclick = capture;

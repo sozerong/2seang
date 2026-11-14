@@ -405,6 +405,34 @@ const CCTV = (() => {
 
   const SCENES = { '01': cam01, '02': cam02, '03': cam03, '04': cam04 };
 
+  // ---- 확대 화면 (쉬움 모드: 따로 그린 클로즈업) ----
+  const ZOOMS = {
+    '01-18:20': c => { rect(c, 0, 0, W, H, gy(40)); poly(c, gy(150), 30, 30, 290, 20, 300, 170, 20, 175);
+      line(c, gy(110), 3, 30, 90, 295, 85); rect(c, 95, 50, 130, 70, gy(235));
+      text(c, '보존문서', 160, 72, 24, gy(25), true); text(c, '2024', 160, 100, 24, gy(25), true); text(c, 'B-02', 205, 114, 12, gy(90)); },
+    '01-21:50': c => { rect(c, 0, 0, W, H, gy(70)); rect(c, 230, 30, 50, 80, gy(30)); rect(c, 240, 45, 30, 20, gy(60)); ell(c, 255, 90, 4, 4, gy(220));
+      poly(c, gy(170), 40, 180, 80, 120, 130, 110, 140, 140, 90, 180); rect(c, 100, 70, 120, 76, gy(240));
+      rect(c, 108, 80, 30, 38, gy(120)); c.save(); c.beginPath(); c.rect(108, 80, 30, 38); c.clip(); head(c, 123, 100, { hair: 'short', glasses: true, face: 'front' }); c.restore(); text(c, '재난안전과', 182, 92, 12, gy(30)); text(c, '박도현', 182, 112, 24, gy(20), true); rect(c, 108, 128, 104, 10, gy(60)); },
+    '02-21:58': c => { rect(c, 0, 0, W, H, gy(30)); poly(c, gy(205), 130, 0, 190, 0, 160, 70); line(c, gy(15), 8, 160, 5, 160, 75);
+      line(c, gy(200), 2, 120, 0, 140, 80); line(c, gy(200), 2, 200, 0, 180, 80); rect(c, 110, 78, 100, 90, gy(240));
+      text(c, 'VISITOR', 160, 98, 12, gy(60)); text(c, 'V-0731', 160, 128, 24, gy(15), true); rect(c, 120, 150, 80, 6, gy(120)); },
+    '01-22:05': c => { rect(c, 0, 0, W, H, gy(50)); poly(c, gy(215), 40, 20, 280, 26, 276, 164, 44, 160);
+      poly(c, gy(190), 40, 20, 280, 26, 160, 62); text(c, 'EV-2417', 150, 104, 24, gy(25), true);
+      c.save(); c.translate(220, 135); c.rotate(-.12); c.strokeStyle = gy(40); c.lineWidth = 3; c.strokeRect(-36, -14, 72, 28); text(c, '대외비', 0, 0, 24, gy(40), true); c.restore(); },
+    '03-22:14': c => { rect(c, 0, 0, W, H, gy(120)); poly(c, gy(220), 20, 70, 150, 60, 160, 150, 30, 160);
+      text(c, 'EV-2417', 90, 108, 12, gy(40), true); poly(c, gy(170), 0, 130, 40, 120, 60, 140, 20, 170);
+      rect(c, 180, 0, 140, 180, gy(32)); line(c, gy(200), 2, 230, 0, 240, 60); line(c, gy(200), 2, 290, 0, 280, 60);
+      rect(c, 215, 58, 90, 64, gy(240)); text(c, 'VISITOR', 260, 74, 12, gy(60)); text(c, 'V-0731', 260, 100, 24, gy(15), true); },
+    '04-22:31': c => { rect(c, 0, 0, W, H, gy(10)); rect(c, 30, 14, 260, 150, gy(40)); rect(c, 40, 22, 240, 132, gy(225));
+      rect(c, 40, 22, 240, 16, gy(90)); text(c, '평가관리시스템', 46, 30, 12, gy(245), false, 'left');
+      text(c, 'EV-2417  주혁볼트', 50, 54, 12, gy(40), false, 'left'); text(c, '부적합 → 적합', 50, 70, 12, gy(40), false, 'left');
+      rect(c, 80, 88, 160, 50, gy(250)); c.strokeStyle = gy(40); c.lineWidth = 2; c.strokeRect(80, 88, 160, 50);
+      text(c, '수정 저장 완료', 160, 106, 12, gy(20), true); text(c, '22:31:07', 160, 124, 12, gy(90)); },
+    '02-23:05': c => { rect(c, 0, 0, W, H, gy(25)); poly(c, gy(110), 40, 0, 200, 0, 230, 180, 60, 180);
+      poly(c, gy(240), 52, 60, 208, 52, 214, 104, 58, 112); text(c, '당직', 133, 82, 24, gy(25), true);
+      rect(c, 230, 120, 60, 22, gy(60)); glow(c, 300, 131, 40, .7); },
+  };
+
   function make(key, draw, tint = true, ss = SS) {
     if (cache[key]) return cache[key];
     seed(key); const [cv, c] = canvas(ss); c.imageSmoothingEnabled = false;
@@ -435,6 +463,8 @@ const CCTV = (() => {
 
   return {
     scene: (cam, time) => make(`${cam}-${time}`, c => SCENES[cam](c, time)),
+    zoom: key => ZOOMS[key] ? make('Z' + key, ZOOMS[key]) : null,
+    hasZoom: key => !!ZOOMS[key],
     // 확대경용 고해상도 (6배). 같은 장면을 크게 그려서 작은 글씨까지 읽힌다
     sceneHi: (cam, time) => make(`${cam}-${time}@hi`, c => SCENES[cam](c, time), true, 6),
     shelter,
