@@ -62,8 +62,8 @@ img{image-rendering:pixelated}
 .memo{position:relative}
 #briefBack{position:absolute;left:14px;top:8px;font-size:12px;padding:2px 0}
 #briefBack::before{content:none}
-.hudBtn.home{color:var(--ink);border-color:#3a3d33;animation:none}
-.hudBtn.home:hover{border-color:var(--ink);background:#22241e}
+#homeBtn{color:var(--ink);border-color:#3a3d33;animation:none}
+#homeBtn:hover{border-color:var(--ink);background:#22241e}
 #briefText small{font-family:Galmuri11;font-size:12px;color:#4a4536}
 .memo .menu{color:#1d1b16;margin-top:12px}
 .memo .menu:hover{color:#8a1c12}
