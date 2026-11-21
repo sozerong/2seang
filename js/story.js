@@ -13,14 +13,12 @@ const STORY = [
   {who: '팀장', face: '진지', text: '그래서 이번엔 "8시간 이상 전기를 버틸 것"이 필수 조건이야. 못 맞추면 무조건 탈락.'},
   // 장면 2. 이상한 낙찰
   {who: '팀장', face: '기본', text: '입찰엔 네 곳이 들어왔어. 태림에너지, 서영파워, 영래에너지, 그리고 주혁볼트.'},
-  {narr: '서류 넘기는 소리.', fx: 'doc'},
-  {who: '팀장', face: '굳음', text: '그런데 낙찰 예정 업체가 주혁볼트야.'},
+  {who: '팀장', face: '굳음', text: '그런데 낙찰 예정 업체가 주혁볼트야.', fx: 'doc'},
   {choice: ['주혁볼트가 왜요?', '뭐가 문제인데요?']},
   {who: '팀장', face: '굳음', text: '주혁볼트 장치는 5시간 30분밖에 못 버텨. 안전성 검증자료도 일부 안 냈고. 원래는 기준 미달이야.'},
   {who: '팀장', face: '진지', text: '그런데 오늘 올라온 계약검토보고서엔 네 곳 모두 "적합"이라고 적혀 있어.'},
   // 장면 3. 익명 신고
-  {narr: '띵. 메신저 알림음. 팀장이 모니터를 돌려 보여 준다.', fx: 'ding'},
-  {who: '팀장', face: '진지', text: '그리고 어젯밤 익명 신고가 들어왔어.'},
+  {who: '팀장', face: '진지', text: '그리고 어젯밤 익명 신고가 들어왔어.', fx: 'ding'},
   {who: '팀장', face: '진지', text: '"한빛시 검토자료 EV-2417이 업체 쪽으로 새어 나갔다."'},
   {choice: ['EV-2417이 뭔데요?', '업체라면… 설마 주혁볼트요?']},
   {who: '팀장', face: '기본', text: 'EV-2417은 한빛시가 만든 규격 적합성 검토서 번호야. 업체마다 적합인지 부적합인지 판정해 둔 문서지.'},
@@ -85,7 +83,10 @@ const Story = (() => {
     if (l.cap !== undefined) el('stCap').textContent = l.cap;
     if (l.cap !== undefined && !l.who && !l.narr && !l.choice) return next(); // 자막만 있는 줄
     // 연출 화면: 연출 줄에서 뜨고, 그 이야기가 이어지는 동안 남아 있다가 다음 선택지에서 사라진다
-    if (l.fx){ const f = el('stFx'); f.className = 'fx-' + l.fx; f.innerHTML = FX[l.fx]; }
+    if (l.fx){ const f = el('stFx'); f.className = 'fx-' + l.fx; f.innerHTML = FX[l.fx];
+      if (l.fx === 'ding') SFX.good();
+      if (l.fx === 'doc') SFX.static(.15, .05);
+      if (l.fx === 'clock') [0, 1, 2, 3].forEach(k => setTimeout(SFX.tick, k * 450)); }
     if (l.choice) el('stFx').classList.add('hidden');
     if (l.who){
       const c = el('stChar'); c.src = `img/chief-${FACE[l.face] || 'smile'}.webp`; c.classList.remove('hidden', 'dim');
@@ -93,9 +94,6 @@ const Story = (() => {
       say(l.who, l.text);
     } else if (l.narr){
       el('stChar').classList.add('dim');
-      if (l.fx === 'ding') SFX.good();
-      if (l.fx === 'doc') SFX.static(.15, .05);
-      if (l.fx === 'clock') [0, 1, 2, 3].forEach(k => setTimeout(SFX.tick, k * 450));
       say('', l.narr, 'narr');
     } else if (l.choice){
       el('stName').textContent = '나'; el('stName').classList.remove('hidden');
