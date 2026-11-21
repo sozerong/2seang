@@ -58,8 +58,8 @@ function show(id){ document.querySelectorAll('.screen').forEach(s => s.classList
 // 타이틀
 $('mSound').onclick = () => { $('mSound').textContent = '소리: ' + (SFX.toggle() ? '켜짐' : '꺼짐'); };
 let MODE = 'hard';
-$('mEasy').onclick = () => { MODE = 'easy'; SFX.init(); SFX.hum(); SFX.click(); briefing(); };
-$('mHard').onclick = () => { MODE = 'hard'; SFX.init(); SFX.hum(); SFX.click(); briefing(); };
+$('mEasy').onclick = () => { MODE = 'easy'; SFX.init(); SFX.hum(); SFX.click(); Story.start(briefing); };
+$('mHard').onclick = () => { MODE = 'hard'; SFX.init(); SFX.hum(); SFX.click(); Story.start(briefing); };
 // ---------- 튜토리얼 ----------
 const TUT = () => [
   ['목표', `<p>한빛시 비상전원장치 입찰에서 기준 미달 업체가 낙찰 예정이다.</p>
