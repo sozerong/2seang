@@ -45,13 +45,26 @@ const STORY = [
   {who: '팀장', face: '진지', text: '대피소 불이 켜져 있을지는 네 손에 달렸어. 부탁한다.'},
 ];
 
+// 연출 줄에서 화면 가운데에 뜨는 그림
+const FX = {
+  doc: `<div class="fxDoc"><b>계약검토보고서</b><span>조달청 · D-day 제출</span><span>수정 검토서(EV-2417)를 근거로<br>4개 업체 모두 적합</span><span class="who">낙찰예정자: 주혁볼트</span></div>`,
+  ding: `<div class="fxMon"><div class="fxBar">메신저 · 신고접수</div><div class="fxMsg"><span class="tag">익명 신고</span><span class="time">D-1 23:41</span>
+    어젯밤 <b>EV-2417</b>이라는 자료가<br>업체 쪽으로 나갔다는 이야기를 들었습니다.</div></div>`,
+  clock: `<svg class="fxClock" viewBox="0 0 200 200"><circle cx="100" cy="100" r="92" fill="#e9e5d6" stroke="#2a2b25" stroke-width="10"/>
+    ${Array.from({length: 60}, (_, k) => `<line x1="100" y1="${k % 5 ? 16 : 14}" x2="100" y2="${k % 5 ? 22 : 30}" stroke="#2a2b25" stroke-width="${k % 5 ? 1.5 : 4}" transform="rotate(${k * 6} 100 100)"/>`).join('')}
+    <line x1="100" y1="100" x2="100" y2="55" stroke="#1c1a15" stroke-width="8" stroke-linecap="round" transform="rotate(265 100 100)"/>
+    <line x1="100" y1="100" x2="100" y2="34" stroke="#1c1a15" stroke-width="5" stroke-linecap="round" transform="rotate(300 100 100)"/>
+    <g class="sec"><line x1="100" y1="118" x2="100" y2="26" stroke="#c4372b" stroke-width="2"/></g><circle cx="100" cy="100" r="6" fill="#c4372b"/></svg>
+    <div class="fxTime">08:50</div>`,
+};
+
 const Story = (() => {
   let lines, i, skipType, typing, done;
   const el = id => document.getElementById(id);
 
   function start(onDone){
     done = onDone; lines = STORY.filter(l => !l.easy || MODE === 'easy'); i = -1;
-    el('stCap').textContent = ''; el('stDoc').classList.add('hidden'); el('stChar').classList.add('hidden');
+    el('stCap').textContent = ''; el('stFx').classList.add('hidden'); el('stChar').classList.add('hidden');
     show('story'); next();
   }
   function finish(){ clearInterval(typer); typing = false; SFX.click(); done(); }
@@ -71,7 +84,9 @@ const Story = (() => {
     const l = lines[i];
     if (l.cap !== undefined) el('stCap').textContent = l.cap;
     if (l.cap !== undefined && !l.who && !l.narr && !l.choice) return next(); // 자막만 있는 줄
-    el('stDoc').classList.toggle('hidden', l.fx !== 'doc');
+    // 연출 화면: 연출 줄에서 뜨고, 그 이야기가 이어지는 동안 남아 있다가 다음 선택지에서 사라진다
+    if (l.fx){ const f = el('stFx'); f.className = 'fx-' + l.fx; f.innerHTML = FX[l.fx]; }
+    if (l.choice) el('stFx').classList.add('hidden');
     if (l.who){
       const c = el('stChar'); c.src = `img/chief-${FACE[l.face] || 'smile'}.webp`; c.classList.remove('hidden', 'dim');
       c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
